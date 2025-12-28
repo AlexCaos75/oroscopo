@@ -10,16 +10,25 @@
     :root{
       --bg0:#030416;
       --bg1:#07072a;
-      --glass: rgba(255,255,255,.07);
-      --glass2: rgba(255,255,255,.10);
-      --stroke: rgba(255,255,255,.16);
-      --txt: rgba(255,255,255,.94);
-      --muted: rgba(255,255,255,.72);
-      --muted2: rgba(255,255,255,.55);
-      --shadow: 0 22px 90px rgba(0,0,0,.62);
-      --shadow2: 0 10px 42px rgba(0,0,0,.45);
-      --r: 22px;
-      --r2: 16px;
+
+      --glass: rgba(255,255,255,.08);
+      --glass2: rgba(255,255,255,.12);
+      --stroke: rgba(255,255,255,.18);
+
+      --txt: rgba(255,255,255,.95);
+      --muted: rgba(255,255,255,.75);
+      --muted2: rgba(255,255,255,.58);
+
+      --shadow: 0 26px 110px rgba(0,0,0,.68);
+      --shadow2: 0 14px 56px rgba(0,0,0,.52);
+
+      --r: 24px;
+      --r2: 18px;
+
+      --neonA: rgba(180,80,255,.60);
+      --neonB: rgba(40,230,255,.42);
+      --neonC: rgba(255,80,210,.36);
+
       --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
       --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     }
@@ -31,32 +40,32 @@
       font-family:var(--sans);
       color:var(--txt);
       background:
-        radial-gradient(1200px 800px at 18% 18%, rgba(170,80,255,.26), transparent 58%),
-        radial-gradient(1100px 760px at 85% 22%, rgba(40,220,255,.20), transparent 58%),
-        radial-gradient(900px 700px at 55% 92%, rgba(255,80,210,.14), transparent 58%),
+        radial-gradient(1400px 900px at 18% 18%, rgba(170,80,255,.32), transparent 58%),
+        radial-gradient(1200px 840px at 85% 22%, rgba(40,220,255,.26), transparent 58%),
+        radial-gradient(1000px 780px at 55% 92%, rgba(255,80,210,.20), transparent 58%),
         linear-gradient(180deg, var(--bg1), var(--bg0));
       overflow-x:hidden;
     }
 
-    /* star dust */
+    /* star dust + glow layer */
     body:before{
       content:"";
       position:fixed; inset:0;
       pointer-events:none;
       background-image:
-        radial-gradient(1px 1px at 12% 28%, rgba(255,255,255,.36), transparent 45%),
-        radial-gradient(1px 1px at 26% 70%, rgba(255,255,255,.22), transparent 45%),
-        radial-gradient(1px 1px at 52% 18%, rgba(255,255,255,.18), transparent 45%),
-        radial-gradient(1px 1px at 76% 46%, rgba(255,255,255,.26), transparent 45%),
-        radial-gradient(1px 1px at 90% 84%, rgba(255,255,255,.20), transparent 45%);
-      opacity:.92;
+        radial-gradient(1px 1px at 12% 28%, rgba(255,255,255,.42), transparent 45%),
+        radial-gradient(1px 1px at 26% 70%, rgba(255,255,255,.26), transparent 45%),
+        radial-gradient(1px 1px at 52% 18%, rgba(255,255,255,.22), transparent 45%),
+        radial-gradient(1px 1px at 76% 46%, rgba(255,255,255,.30), transparent 45%),
+        radial-gradient(1px 1px at 90% 84%, rgba(255,255,255,.24), transparent 45%);
+      opacity:.95;
       mix-blend-mode:screen;
     }
 
     .wrap{
-      max-width: 1020px;
+      max-width: 1040px;
       margin: 0 auto;
-      padding: 26px 16px 50px;
+      padding: 28px 16px 54px;
     }
 
     .topbar{
@@ -77,15 +86,17 @@
     }
 
     .sigil{
-      width:48px;height:48px;
-      border-radius:16px;
+      width:52px;height:52px;
+      border-radius:18px;
       background:
-        radial-gradient(circle at 28% 28%, rgba(255,255,255,.28), transparent 58%),
-        linear-gradient(135deg, rgba(180,80,255,.78), rgba(40,230,255,.42));
-      border:1px solid rgba(255,255,255,.20);
-      box-shadow: 0 18px 70px rgba(110,120,255,.24);
+        radial-gradient(circle at 28% 28%, rgba(255,255,255,.32), transparent 58%),
+        linear-gradient(135deg, rgba(180,80,255,.85), rgba(40,230,255,.44));
+      border:1px solid rgba(255,255,255,.22);
+      box-shadow:
+        0 18px 70px rgba(110,120,255,.30),
+        0 0 40px rgba(180,80,255,.18);
       display:grid; place-items:center;
-      font-weight:900;
+      font-weight:1000;
       letter-spacing:.6px;
     }
 
@@ -99,7 +110,7 @@
       margin:6px 0 0;
       font-size:13px;
       color:var(--muted2);
-      max-width: 520px;
+      max-width: 560px;
     }
 
     .actions{
@@ -112,41 +123,57 @@
     .btn{
       appearance:none;
       border:1px solid rgba(255,255,255,.18);
-      background: rgba(255,255,255,.07);
+      background: rgba(255,255,255,.08);
       color:var(--txt);
       padding:10px 14px;
       border-radius: 999px;
       cursor:pointer;
-      font-weight:800;
+      font-weight:900;
       font-size:13px;
-      letter-spacing:.3px;
-      transition:transform .10s ease, background .18s ease, border-color .18s ease, box-shadow .18s ease;
+      letter-spacing:.35px;
+      transition:transform .10s ease, background .18s ease, border-color .18s ease, box-shadow .18s ease, filter .18s ease;
       display:inline-flex;
       align-items:center;
       gap:10px;
-      box-shadow: 0 12px 34px rgba(0,0,0,.25);
+      box-shadow: 0 12px 34px rgba(0,0,0,.26);
       text-decoration:none;
+      -webkit-tap-highlight-color: transparent;
     }
     .btn:hover{
-      background: rgba(255,255,255,.12);
-      border-color: rgba(255,255,255,.30);
+      background: rgba(255,255,255,.14);
+      border-color: rgba(255,255,255,.34);
       transform: translateY(-1px);
-      box-shadow: 0 16px 44px rgba(0,0,0,.32);
+      box-shadow: 0 18px 54px rgba(0,0,0,.36);
+      filter: saturate(1.05);
     }
 
     .btn.primary{
-      background: linear-gradient(135deg, rgba(180,80,255,.74), rgba(40,230,255,.34));
-      border-color: rgba(255,255,255,.26);
+      background: linear-gradient(135deg, rgba(180,80,255,.86), rgba(40,230,255,.38));
+      border-color: rgba(255,255,255,.30);
+      box-shadow:
+        0 16px 48px rgba(0,0,0,.34),
+        0 0 28px rgba(180,80,255,.18);
     }
 
     .btn.oracolo{
-      background: linear-gradient(135deg, rgba(255,120,220,.40), rgba(120,120,255,.38));
-      border-color: rgba(255,255,255,.22);
+      background: linear-gradient(135deg, rgba(255,120,220,.46), rgba(120,120,255,.44));
+      border-color: rgba(255,255,255,.26);
+      box-shadow:
+        0 16px 48px rgba(0,0,0,.30),
+        0 0 26px rgba(255,80,210,.14);
+    }
+
+    .btn.linklive{
+      background: linear-gradient(135deg, rgba(40,230,255,.34), rgba(180,80,255,.40));
+      border-color: rgba(255,255,255,.28);
+      box-shadow:
+        0 16px 50px rgba(0,0,0,.32),
+        0 0 28px rgba(40,230,255,.16);
     }
 
     .card{
-      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.05));
-      border:1px solid rgba(255,255,255,.16);
+      background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.06));
+      border:1px solid rgba(255,255,255,.18);
       border-radius: var(--r);
       box-shadow: var(--shadow);
       overflow:hidden;
@@ -157,9 +184,9 @@
       content:"";
       position:absolute; inset:-2px;
       background:
-        radial-gradient(700px 320px at 10% 0%, rgba(180,80,255,.28), transparent 60%),
-        radial-gradient(850px 340px at 95% 28%, rgba(40,230,255,.22), transparent 60%),
-        radial-gradient(700px 320px at 50% 105%, rgba(255,80,210,.16), transparent 60%);
+        radial-gradient(760px 360px at 10% 0%, rgba(180,80,255,.34), transparent 60%),
+        radial-gradient(900px 380px at 95% 28%, rgba(40,230,255,.28), transparent 60%),
+        radial-gradient(760px 360px at 50% 105%, rgba(255,80,210,.22), transparent 60%);
       pointer-events:none;
       opacity:1;
       mix-blend-mode:screen;
@@ -188,7 +215,7 @@
       margin:8px 0 0;
       color:var(--muted);
       font-size:13px;
-      line-height:1.4;
+      line-height:1.45;
     }
 
     .chips{
@@ -199,12 +226,12 @@
     }
     .chip{
       font-size:12px;
-      color: rgba(255,255,255,.88);
+      color: rgba(255,255,255,.90);
       border:1px solid rgba(255,255,255,.16);
       background: rgba(0,0,0,.18);
       padding:6px 10px;
       border-radius: 999px;
-      backdrop-filter: blur(8px);
+      backdrop-filter: blur(10px);
     }
 
     .divider{
@@ -219,7 +246,7 @@
       border-radius: var(--r2);
       padding:14px;
       box-shadow: var(--shadow2);
-      backdrop-filter: blur(10px);
+      backdrop-filter: blur(12px);
     }
 
     pre.text{
@@ -228,27 +255,36 @@
       word-break:break-word;
       font-family:var(--mono);
       font-size:13.5px;
-      line-height:1.55;
-      color: rgba(255,255,255,.92);
+      line-height:1.6;
+      color: rgba(255,255,255,.94);
     }
 
     .media{
       width:100%;
-      max-height:520px;
+      max-height:540px;
       object-fit:cover;
       border-radius: var(--r2);
       margin-top:14px;
-      border:1px solid rgba(255,255,255,.18);
-      box-shadow: var(--shadow2);
+      border:1px solid rgba(255,255,255,.20);
+      box-shadow:
+        var(--shadow2),
+        0 0 36px rgba(40,230,255,.10);
       display:none;
+      transition: transform .25s ease, filter .25s ease;
+    }
+    .media:hover{
+      transform: translateY(-2px) scale(1.005);
+      filter: saturate(1.06) contrast(1.02);
     }
 
     .video-wrap{
       margin-top:14px;
       border-radius: var(--r2);
       overflow:hidden;
-      border:1px solid rgba(255,255,255,.18);
-      box-shadow: var(--shadow2);
+      border:1px solid rgba(255,255,255,.20);
+      box-shadow:
+        var(--shadow2),
+        0 0 36px rgba(180,80,255,.10);
       display:none;
       background: rgba(0,0,0,.25);
     }
@@ -270,10 +306,10 @@
     }
 
     .status{
-      font-weight:900;
-      letter-spacing:.35px;
+      font-weight:1000;
+      letter-spacing:.45px;
       font-size:12px;
-      opacity:.9;
+      opacity:.95;
     }
 
     .toast{
@@ -281,15 +317,15 @@
       left:50%;
       bottom:18px;
       transform:translateX(-50%);
-      background: rgba(0,0,0,.58);
+      background: rgba(0,0,0,.62);
       border:1px solid rgba(255,255,255,.18);
       border-radius:999px;
       padding:10px 14px;
-      color:rgba(255,255,255,.92);
+      color:rgba(255,255,255,.94);
       font-size:13px;
-      font-weight:800;
-      box-shadow: 0 20px 60px rgba(0,0,0,.58);
-      backdrop-filter: blur(12px);
+      font-weight:900;
+      box-shadow: 0 20px 60px rgba(0,0,0,.62);
+      backdrop-filter: blur(14px);
       opacity:0;
       pointer-events:none;
       transition:opacity .18s ease, transform .18s ease;
@@ -329,7 +365,7 @@
       <div class="inner">
         <div class="meta">
           <div>
-            <h2 class="title" id="postTitle">Caricamento…</h2>
+            <h2 class="title" id="postTitle">Caricamento...</h2>
             <div class="subtitle" id="postSub">Attendo il responso dal Pianeta Segreto.</div>
 
             <div class="chips" id="chips" style="display:none">
@@ -344,7 +380,7 @@
         <div class="divider"></div>
 
         <div class="box">
-          <pre class="text" id="postText">Caricamento…</pre>
+          <pre class="text" id="postText">Caricamento...</pre>
           <img id="postImage" class="media" alt="Immagine Pianeta Segreto" />
           <div id="videoWrap" class="video-wrap">
             <iframe id="ytFrame" src="" title="Video Pianeta Segreto"
@@ -356,7 +392,7 @@
 
         <div class="foot">
           <div id="footLeft">Nessun post ancora.</div>
-          <div id="footRight">Suggerimento: Ruota → ADMIN → POST SPOT.</div>
+          <div id="footRight">Suggerimento: Ruota -> ADMIN -> POST SPOT.</div>
         </div>
       </div>
     </div>
@@ -423,24 +459,43 @@
       return typeof id === "string" && /^[a-zA-Z0-9_-]{6,20}$/.test(id);
     }
 
+    // ASCII safe (anti ??)
+    function sanitizePlainASCII(input){
+      let s = String(input ?? "");
+      try { s = s.normalize("NFD").replace(/[\u0300-\u036f]/g, ""); } catch {}
+      s = s.replace(/[“”]/g, '"').replace(/[‘’]/g, "'");
+      s = s.replace(/[^\x09\x0A\x0D\x20-\x7E]/g, " ");
+      s = s.replace(/\?{2,}/g, "?");
+      s = s.replace(/[ \t]+/g, " ");
+      s = s.replace(/\n{3,}/g, "\n\n");
+      return s.trim();
+    }
+
+    function setOpenLinkLive(isLive){
+      openLink.classList.toggle("linklive", !!isLive);
+    }
+
     function render(payload){
       latestPayload = payload || {};
 
-      const author = payload?.author || "Luna Vallyy";
-      const oracle = payload?.oracle || "Oracolo di Pianeta Segreto";
-      const title  = payload?.title || `${author} - ${oracle}`;
-      const sub    = payload?.subtitle || "Messaggio dal Pianeta Segreto. Pronto anche per Discord.";
-      const text   = payload?.text || "Nessun post ancora.";
-      const link   = payload?.link || "./index.html";
+      const author = sanitizePlainASCII(payload?.author || "Luna Vallyy");
+      const oracle = sanitizePlainASCII(payload?.oracle || "Oracolo di Pianeta Segreto");
+
+      const title  = sanitizePlainASCII(payload?.title || `${author} - ${oracle}`);
+      const sub    = sanitizePlainASCII(payload?.subtitle || "Messaggio dal Pianeta Segreto. Pronto anche per Discord.");
+      const text   = sanitizePlainASCII(payload?.text || "Nessun post ancora.");
+      const link   = (payload?.link && String(payload.link).trim()) ? String(payload.link).trim() : "./index.html";
+
       const at     = payload?.at || 0;
-      const mode   = payload?.mode || "POST";
-      const tag    = payload?.tag  || "Pianeta Segreto";
+      const mode   = sanitizePlainASCII(payload?.mode || "POST");
+      const tag    = sanitizePlainASCII(payload?.tag  || "Pianeta Segreto");
 
       postTitle.textContent = title;
       postSub.textContent   = sub;
       postText.textContent  = text;
 
       openLink.href = link;
+      setOpenLinkLive(true);
 
       chips.style.display = "flex";
       chipMode.textContent = `Modalita: ${mode}`;
@@ -448,7 +503,7 @@
       chipTag.textContent  = `Tag: ${tag}`;
 
       footLeft.textContent  = at ? `Ultimo post: ${safeTime(at)}` : "Ultimo post disponibile.";
-      footRight.textContent = "Consiglio: Ruota → ADMIN → POST SPOT.";
+      footRight.textContent = "Consiglio: Ruota -> ADMIN -> POST SPOT.";
 
       // image
       imgEl.style.display = "none";
@@ -458,7 +513,7 @@
         imgEl.style.display = "block";
       }
 
-      // video (ID)
+      // video
       videoWrap.style.display = "none";
       ytFrame.src = "";
       if (payload?.video && isValidYouTubeId(payload.video)){
@@ -476,25 +531,26 @@
       postText.textContent  = "Nessun post ancora.\n\nApri la Ruota, entra ADMIN e premi POST SPOT.";
       chips.style.display = "none";
       openLink.href = "./index.html";
+      setOpenLinkLive(false);
       imgEl.style.display = "none";
       videoWrap.style.display = "none";
       statusEl.textContent = "VUOTO";
       footLeft.textContent = "Nessun post ancora.";
-      footRight.textContent = "Suggerimento: Ruota → ADMIN → POST SPOT.";
+      footRight.textContent = "Suggerimento: Ruota -> ADMIN -> POST SPOT.";
     }
 
     copyBtn.addEventListener("click", async () => {
       const t = latestPayload?.text || "";
-      if (!t.trim()){
+      if (!String(t).trim()){
         toastShow("Niente da copiare");
         return;
       }
       try{
-        await navigator.clipboard.writeText(t);
+        await navigator.clipboard.writeText(String(t));
         toastShow("Copiato");
       }catch{
         const ta = document.createElement("textarea");
-        ta.value = t;
+        ta.value = String(t);
         document.body.appendChild(ta);
         ta.select();
         document.execCommand("copy");
