@@ -1,16 +1,16 @@
 // ==========================
-// 🔥 RUOTA LUNARE 2026 — SCRIPT CAPOLAVORO (FULL)
+// 🔥 RUOTA LUNARE 2026 — SCRIPT VINCENTE (FULL)
 // ✅ daily listener con off()
 // ✅ fallback giorno locale
 // ✅ admin salva sul daily corrente
 // ✅ compatibile oroscopiCurrent: stringa OR {date, updatedAt}
 // ✅ AUTO-UPDATE GIORNALIERO DIRETTO SU FIREBASE
-// ✅ anti-spam: una volta al giorno + cooldown
+// ✅ anti-spam: 1 volta al giorno + lock globale vero
 // ✅ resync dopo mezzanotte
 // ✅ supporta OROSCOPO RICCO: stringa OR oggetto {testo, amore, lavoro, fortuna, consiglio}
 // ✅ MIGRAZIONE: window.LUNA.migrateTodayToRichFormat()
-// ✅ POST: Bacheca Pianeta Segreto + Copia Discord (testo pulito ASCII)
-// ✅ SPOT: evento separato (senza segni) con immagine + YouTube
+// ✅ POST: Bacheca Pianeta Segreto + Copia Discord (ASCII safe)
+// ✅ SPOT: 13° evento separato (senza segni) con immagine + YouTube
 // ==========================
 
 const DEBUG = true;
@@ -44,7 +44,7 @@ const appFB = initializeApp(firebaseConfig);
 const db = getDatabase(appFB);
 
 // ==========================
-// 🌐 GLOBAL / DEBUG
+// 🌐 GLOBAL
 // ==========================
 window.LUNA = window.LUNA || {};
 window.LUNA.db = db;
@@ -65,8 +65,6 @@ const CHAT_PATH        = "ruota-lunare/chat";
 const ORO_CURRENT_PATH = "ruota-lunare/oroscopiCurrent";      // fallback
 const ORO_CURRENT_STR  = "ruota-lunare/oroscopiCurrentDate";  // primario
 const ORO_DAILY_BASE   = "ruota-lunare/oroscopiDaily";
-
-// ✅ BACHECA PIANETA SEGRETO
 const BACHECA_LATEST   = "ruota-lunare/bacheca/latest";
 
 // ==========================
@@ -119,25 +117,14 @@ function parseCurrentDayFromDb(v) {
 // ==========================
 function sanitizePlainASCII(input) {
   let s = String(input ?? "");
-
-  // normalizza e rimuove accenti
-  try {
-    s = s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-  } catch {}
-
-  // smart quotes -> normali
+  try { s = s.normalize("NFD").replace(/[\u0300-\u036f]/g, ""); } catch {}
   s = s.replace(/[“”]/g, '"').replace(/[‘’]/g, "'");
-
-  // rimuove tutto non-ASCII stampabile (teniamo newline/tab)
   s = s.replace(/[^\x09\x0A\x0D\x20-\x7E]/g, " ");
-
-  // pulizia
   s = s.replace(/\?{2,}/g, "?");
   s = s.replace(/"{2,}/g, '"');
   s = s.replace(/'{2,}/g, "'");
   s = s.replace(/[ \t]+/g, " ");
   s = s.replace(/\n{3,}/g, "\n\n");
-
   return s.trim();
 }
 
@@ -146,92 +133,19 @@ function sanitizePlainASCII(input) {
 // ==========================
 function buildDefaultDailyPayload() {
   const base = {
-    "Ariete": {
-      testo: "Energia alta e voglia di ripartire. Scegli una sfida e affrontala senza esitazioni.",
-      amore: "Diretto e magnetico: chiarisci subito cosa vuoi.",
-      lavoro: "Taglia il superfluo e agisci: oggi conta la rapidita.",
-      fortuna: "Alta se segui listinto.",
-      consiglio: "Una decisione netta vale piu di mille dubbi."
-    },
-    "Toro": {
-      testo: "Stabilita e riflessioni profonde. Costruisci con calma: un passo solido oggi vale doppio domani.",
-      amore: "Gesti concreti: poche parole ma vere.",
-      lavoro: "Ritmo costante: chi semina raccoglie.",
-      fortuna: "Media-alta se non forzi i tempi.",
-      consiglio: "Scegli una priorita e proteggila."
-    },
-    "Gemelli": {
-      testo: "Comunicazione al centro: una notizia, un invito o un contatto sblocca la giornata.",
-      amore: "Leggerezza intelligente: flirt e sorrisi.",
-      lavoro: "Ottimo per riunioni, messaggi, accordi.",
-      fortuna: "Alta nelle relazioni.",
-      consiglio: "Parla chiaro, ma ascolta di piu."
-    },
-    "Cancro": {
-      testo: "Emozioni intense: oggi lintuizione e una bussola precisa.",
-      amore: "Dolcezza e protezione: evita le punzecchiature.",
-      lavoro: "Meglio procedure e continuita che cambi improvvisi.",
-      fortuna: "Buona se resti centrato.",
-      consiglio: "Non difenderti: esprimiti."
-    },
-    "Leone": {
-      testo: "Brilla senza paura: lattenzione e su di te, usala bene.",
-      amore: "Passione e orgoglio: chiedi, non pretendere.",
-      lavoro: "Leadership naturale: guida e ispira.",
-      fortuna: "Alta quando osi.",
-      consiglio: "Fatti vedere, ma con eleganza."
-    },
-    "Vergine": {
-      testo: "Ordine e precisione premiano: risolvi piccoli dettagli e vinci sul lungo periodo.",
-      amore: "Dimostra con fatti, non con ansia.",
-      lavoro: "Perfetto per revisioni, conti, organizzazione.",
-      fortuna: "Media, cresce con disciplina.",
-      consiglio: "Un problema alla volta."
-    },
-    "Bilancia": {
-      testo: "Equilibrio tra cuore e mente: oggi scegli cio che ti rende leggero.",
-      amore: "Armonia e dialogo: evita mezze verita.",
-      lavoro: "Mediazione vincente: ottimo per accordi.",
-      fortuna: "Buona nelle scelte eleganti.",
-      consiglio: "Non rimandare la decisione."
-    },
-    "Scorpione": {
-      testo: "Trasformazioni in arrivo: una verita emerge, e ti rende piu forte.",
-      amore: "Intensita: evita gelosie inutili.",
-      lavoro: "Strategia: muoviti in silenzio e colpisci preciso.",
-      fortuna: "Alta se resti lucido.",
-      consiglio: "Taglia cio che ti drena energia."
-    },
-    "Sagittario": {
-      testo: "Desiderio di avventura: espandi confini, anche solo con unidea nuova.",
-      amore: "Spontaneo: sorprendi chi ami.",
-      lavoro: "Visione ampia: pensa in grande, poi pianifica.",
-      fortuna: "Alta se ti muovi.",
-      consiglio: "Non temere di cambiare rotta."
-    },
-    "Capricorno": {
-      testo: "Determinazione e risultati: oggi costruisci una prova concreta del tuo valore.",
-      amore: "Stabilita: prometti poco, mantieni tutto.",
-      lavoro: "Focus e responsabilita: ottimo per chiudere pratiche.",
-      fortuna: "Media ma sicura.",
-      consiglio: "Fai cio che conta, non cio che appare."
-    },
-    "Acquario": {
-      testo: "Idee fuori dagli schemi: una soluzione creativa ti fa saltare di livello.",
-      amore: "Originale: chiedi spazio e dai spazio.",
-      lavoro: "Innovazione: prova una strada diversa.",
-      fortuna: "Alta nelle intuizioni improvvise.",
-      consiglio: "Non spiegare troppo: fai."
-    },
-    "Pesci": {
-      testo: "Intuizioni forti: sogni e segnali parlano chiaro, se li ascolti.",
-      amore: "Empatia: abbraccia invece di analizzare.",
-      lavoro: "Creativita: ispira e crea connessioni.",
-      fortuna: "Buona se segui il cuore.",
-      consiglio: "Proteggi la tua sensibilita."
-    }
+    "Ariete": { testo:"Energia alta e voglia di ripartire. Scegli una sfida e affrontala senza esitazioni.", amore:"Diretto e magnetico: chiarisci subito cosa vuoi.", lavoro:"Taglia il superfluo e agisci: oggi conta la rapidita.", fortuna:"Alta se segui listinto.", consiglio:"Una decisione netta vale piu di mille dubbi." },
+    "Toro": { testo:"Stabilita e riflessioni profonde. Costruisci con calma: un passo solido oggi vale doppio domani.", amore:"Gesti concreti: poche parole ma vere.", lavoro:"Ritmo costante: chi semina raccoglie.", fortuna:"Media-alta se non forzi i tempi.", consiglio:"Scegli una priorita e proteggila." },
+    "Gemelli": { testo:"Comunicazione al centro: una notizia, un invito o un contatto sblocca la giornata.", amore:"Leggerezza intelligente: flirt e sorrisi.", lavoro:"Ottimo per riunioni, messaggi, accordi.", fortuna:"Alta nelle relazioni.", consiglio:"Parla chiaro, ma ascolta di piu." },
+    "Cancro": { testo:"Emozioni intense: oggi lintuizione e una bussola precisa.", amore:"Dolcezza e protezione: evita le punzecchiature.", lavoro:"Meglio procedure e continuita che cambi improvvisi.", fortuna:"Buona se resti centrato.", consiglio:"Non difenderti: esprimiti." },
+    "Leone": { testo:"Brilla senza paura: lattenzione e su di te, usala bene.", amore:"Passione e orgoglio: chiedi, non pretendere.", lavoro:"Leadership naturale: guida e ispira.", fortuna:"Alta quando osi.", consiglio:"Fatti vedere, ma con eleganza." },
+    "Vergine": { testo:"Ordine e precisione premiano: risolvi piccoli dettagli e vinci sul lungo periodo.", amore:"Dimostra con fatti, non con ansia.", lavoro:"Perfetto per revisioni, conti, organizzazione.", fortuna:"Media, cresce con disciplina.", consiglio:"Un problema alla volta." },
+    "Bilancia": { testo:"Equilibrio tra cuore e mente: oggi scegli cio che ti rende leggero.", amore:"Armonia e dialogo: evita mezze verita.", lavoro:"Mediazione vincente: ottimo per accordi.", fortuna:"Buona nelle scelte eleganti.", consiglio:"Non rimandare la decisione." },
+    "Scorpione": { testo:"Trasformazioni in arrivo: una verita emerge, e ti rende piu forte.", amore:"Intensita: evita gelosie inutili.", lavoro:"Strategia: muoviti in silenzio e colpisci preciso.", fortuna:"Alta se resti lucido.", consiglio:"Taglia cio che ti drena energia." },
+    "Sagittario": { testo:"Desiderio di avventura: espandi confini, anche solo con unidea nuova.", amore:"Spontaneo: sorprendi chi ami.", lavoro:"Visione ampia: pensa in grande, poi pianifica.", fortuna:"Alta se ti muovi.", consiglio:"Non temere di cambiare rotta." },
+    "Capricorno": { testo:"Determinazione e risultati: oggi costruisci una prova concreta del tuo valore.", amore:"Stabilita: prometti poco, mantieni tutto.", lavoro:"Focus e responsabilita: ottimo per chiudere pratiche.", fortuna:"Media ma sicura.", consiglio:"Fai cio che conta, non cio che appare." },
+    "Acquario": { testo:"Idee fuori dagli schemi: una soluzione creativa ti fa saltare di livello.", amore:"Originale: chiedi spazio e dai spazio.", lavoro:"Innovazione: prova una strada diversa.", fortuna:"Alta nelle intuizioni improvvise.", consiglio:"Non spiegare troppo: fai." },
+    "Pesci": { testo:"Intuizioni forti: sogni e segnali parlano chiaro, se li ascolti.", amore:"Empatia: abbraccia invece di analizzare.", lavoro:"Creativita: ispira e crea connessioni.", fortuna:"Buona se segui il cuore.", consiglio:"Proteggi la tua sensibilita." }
   };
-
   return { ...base, updatedAt: Date.now() };
 }
 
@@ -240,7 +154,6 @@ function buildDefaultDailyPayload() {
 // ==========================
 function formatHoroscopeForOutput(signName, value) {
   if (typeof value === "string") return value;
-
   if (value && typeof value === "object") {
     const parts = [];
     if (value.testo) parts.push(value.testo);
@@ -251,12 +164,11 @@ function formatHoroscopeForOutput(signName, value) {
     parts.push(`Consiglio: ${value.consiglio || "-"}`);
     return parts.join("\n").trim();
   }
-
   return `Oroscopo non disponibile per ${signName}.`;
 }
 
 // ==========================
-// 🔗 LINK BASE (index.html nella stessa cartella)
+// 🔗 LINK BASE
 // ==========================
 function getBaseLink() {
   const { origin, pathname } = window.location;
@@ -265,7 +177,7 @@ function getBaseLink() {
 }
 
 // ==========================
-// 🧩 AUTO-UPDATE DAILY (12 segni sempre presenti)
+// 🧩 AUTO-UPDATE DAILY (LOCK VERO)
 // ==========================
 let lastUpdateTry = 0;
 
@@ -277,17 +189,25 @@ async function ensureDailyOroscopoUpToDate() {
   const today = localDayKey();
   const key = "lunaDailyInit_" + today;
 
+  // 1 volta al giorno per client
   if (localStorage.getItem(key) === "1") {
     if (DEBUG) console.log("[ORO] daily init already done for", today);
     return;
   }
 
-  // lock globale
+  // lock globale (multi-client) + check commit
   const lockRef = ref(db, `ruota-lunare/meta/dailyInitLock/${today}`);
-  await runTransaction(lockRef, (cur) => {
-    if (cur && cur.locked) return;
+  const tx = await runTransaction(lockRef, (cur) => {
+    if (cur && cur.locked) return cur;
     return { locked: true, at: Date.now() };
   });
+
+  const gotLock = tx?.committed === true && tx?.snapshot?.val()?.locked === true;
+  if (!gotLock) {
+    if (DEBUG) console.log("[ORO] lock exists, skip init for", today);
+    localStorage.setItem(key, "1");
+    return;
+  }
 
   const dailyRefToday = ref(db, `${ORO_DAILY_BASE}/${today}`);
   const snapDaily = await get(dailyRefToday);
@@ -315,6 +235,7 @@ async function ensureDailyOroscopoUpToDate() {
           if (src[k] == null || src[k] === "") patch[`${sign}/${k}`] = dst[k];
         }
       }
+      // se e' stringa: la lasciamo (compat)
     }
 
     if (Object.keys(patch).length > 0) {
@@ -350,7 +271,7 @@ function scheduleMidnightResync() {
 }
 
 // ==========================
-// 🧿 MIGRAZIONE (console) — converte stringhe in oggetti ricchi
+// 🧿 MIGRAZIONE (console)
 // ==========================
 async function migrateTodayToRichFormat() {
   if (!isAdmin) return alert("Solo ADMIN puo migrare il daily.");
@@ -380,13 +301,7 @@ async function migrateTodayToRichFormat() {
 
     if (typeof v === "string") {
       const d = def[sign];
-      patch[sign] = {
-        testo: v,
-        amore: d.amore,
-        lavoro: d.lavoro,
-        fortuna: d.fortuna,
-        consiglio: d.consiglio
-      };
+      patch[sign] = { testo: v, amore: d.amore, lavoro: d.lavoro, fortuna: d.fortuna, consiglio: d.consiglio };
       converted++;
       continue;
     }
@@ -407,14 +322,13 @@ async function migrateTodayToRichFormat() {
 }
 
 // ==========================
-// 🧾 POST BACHECA (collegato al segno selezionato) — opzionale
+// 🧾 POST OROSCOPO (opzionale)
 // ==========================
 async function postOroscopoToBacheca(signName) {
   if (!isAdmin) return alert("Solo ADMIN puo postare in bacheca.");
   if (!CURRENT_DAY) return alert("CURRENT_DAY non disponibile.");
 
   const day = CURRENT_DAY;
-
   const author = sanitizePlainASCII(window.LUNA.user || "Luna Vallyy");
   const oracle = "Oracolo di Pianeta Segreto";
 
@@ -444,7 +358,6 @@ async function postOroscopoToBacheca(signName) {
   };
 
   await set(ref(db, BACHECA_LATEST), payload);
-
   lunaBot(`Bacheca aggiornata (OROSCOPO): ${signName}.`);
   alert("POST OK: bacheca aggiornata.");
 }
@@ -478,19 +391,20 @@ async function postSpotToBacheca() {
   let image = sanitizePlainASCII(imageInput?.value || "");
   let video = sanitizePlainASCII(videoInput?.value || "");
 
+  // fallback pool (facoltativo)
   const IMAGE_POOL = ["immagini/spot1.jpg","immagini/spot2.jpg","immagini/spot3.jpg"];
   const YT_POOL = ["dQw4w9WgXcQ"];
 
   if (!image && IMAGE_POOL.length) image = IMAGE_POOL[Math.floor(Math.random() * IMAGE_POOL.length)];
   if (!video && YT_POOL.length) video = YT_POOL[Math.floor(Math.random() * YT_POOL.length)];
 
+  // validate image (url assoluto o immagini/..)
+  if (image && !/^https?:\/\//i.test(image) && !/^immagini\/[a-z0-9_\-./]+$/i.test(image)) image = "";
+  // validate youtube id
   if (video && !/^[a-zA-Z0-9_-]{6,20}$/.test(video)) video = "";
 
   const discordText = sanitizePlainASCII(
-    `${title}\n` +
-    `${subtitle}\n\n` +
-    `${body}\n\n` +
-    `Link: ${link}`
+    `${title}\n${subtitle}\n\n${body}\n\nLink: ${link}`
   );
 
   const payload = {
@@ -509,12 +423,16 @@ async function postSpotToBacheca() {
 
   await set(ref(db, BACHECA_LATEST), payload);
 
+  // pulisci input per comodita
+  if (imageInput) imageInput.value = "";
+  if (videoInput) videoInput.value = "";
+
   lunaBot("Bacheca aggiornata: messaggio SPOT pubblicato.");
   alert("POST SPOT OK: bacheca aggiornata.");
 }
 
 // ==========================
-// 📋 COPIA DISCORD (per il segno selezionato) — testo pulito
+// 📋 COPIA DISCORD (per segno selezionato)
 // ==========================
 async function copyDiscordMessage(signName) {
   if (!CURRENT_DAY) return alert("CURRENT_DAY non disponibile.");
@@ -528,11 +446,7 @@ async function copyDiscordMessage(signName) {
   const link = getBaseLink() + `?day=${encodeURIComponent(day)}&sign=${encodeURIComponent(signName)}`;
 
   const msg = sanitizePlainASCII(
-    `Luna Vallyy - ${oracle}\n` +
-    `Giorno: ${day}\n` +
-    `Pianetini: ${signName}\n\n` +
-    `${formatted}\n\n` +
-    `Link: ${link}`
+    `Luna Vallyy - ${oracle}\nGiorno: ${day}\nPianetini: ${signName}\n\n${formatted}\n\nLink: ${link}`
   );
 
   try {
@@ -547,8 +461,6 @@ async function copyDiscordMessage(signName) {
     document.body.removeChild(ta);
     alert("Copiato negli appunti (fallback).");
   }
-
-  if (DEBUG) console.log("[POST] discord msg:", msg);
 }
 
 // ==========================
@@ -667,9 +579,7 @@ function initUI() {
 // ==========================
 // 🖼️ IMMAGINI
 // ==========================
-function safeImg(img) {
-  return `immagini/${img || "p01.png"}`;
-}
+function safeImg(img) { return `immagini/${img || "p01.png"}`; }
 
 function preloadImages() {
   SIGNS.forEach(s => {
@@ -716,12 +626,7 @@ function initSpin() {
 function listenSpin() {
   onValue(ref(db, GAME_PATH), snap => {
     if (!snap.exists()) return;
-
-    if (ignoreFirstSpin) {
-      ignoreFirstSpin = false;
-      return;
-    }
-
+    if (ignoreFirstSpin) { ignoreFirstSpin = false; return; }
     const v = snap.val();
     if (!v || typeof v.winner !== "number") return;
     playSpin(v.winner);
@@ -801,9 +706,7 @@ function openModal(data) {
   document.getElementById("modalHint").innerText  = data.hint;
 
   const v = (oroscopo2026 && oroscopo2026[data.name]) ? oroscopo2026[data.name] : null;
-  const out = formatHoroscopeForOutput(data.name, v);
-
-  document.getElementById("oroscopo2026").innerText = out;
+  document.getElementById("oroscopo2026").innerText = formatHoroscopeForOutput(data.name, v);
 
   const image = document.getElementById("fullscreenImage");
   if (image) {
@@ -831,8 +734,8 @@ function initAdmin() {
   const save   = document.getElementById("saveAdmin");
   const close  = document.getElementById("closeAdmin");
 
-  const postBtn = document.getElementById("postBacheca"); // oroscopo (opzionale)
-  const spotBtn = document.getElementById("postSpot");    // SPOT (evento separato)
+  const postBtn = document.getElementById("postBacheca"); // oroscopo
+  const spotBtn = document.getElementById("postSpot");    // spot
   const copyBtn = document.getElementById("copyDiscord");
 
   if (!select || !text || !btn || !save || !close) return;
@@ -868,25 +771,9 @@ function initAdmin() {
     alert("Salvato.");
   };
 
-  if (postBtn) {
-    postBtn.onclick = async () => {
-      if (!isAdmin) return alert("Prima attiva ADMIN.");
-      await postOroscopoToBacheca(select.value);
-    };
-  }
-
-  if (spotBtn) {
-    spotBtn.onclick = async () => {
-      if (!isAdmin) return alert("Prima attiva ADMIN.");
-      await postSpotToBacheca();
-    };
-  }
-
-  if (copyBtn) {
-    copyBtn.onclick = async () => {
-      await copyDiscordMessage(select.value);
-    };
-  }
+  if (postBtn) postBtn.onclick = async () => { if (!isAdmin) return alert("Prima attiva ADMIN."); await postOroscopoToBacheca(select.value); };
+  if (spotBtn) spotBtn.onclick = async () => { if (!isAdmin) return alert("Prima attiva ADMIN."); await postSpotToBacheca(); };
+  if (copyBtn) copyBtn.onclick = async () => { await copyDiscordMessage(select.value); };
 
   btn.onclick = () => {
     if (!isAdmin) {
@@ -896,7 +783,6 @@ function initAdmin() {
       window.LUNA.isAdmin = true;
       lunaBot(`ADMIN attivo: ${window.LUNA.user || "Luna"}.`);
     }
-
     document.getElementById("adminModal")?.classList.remove("hidden");
     select.dispatchEvent(new Event("change"));
   };
@@ -905,13 +791,12 @@ function initAdmin() {
 }
 
 // ==========================
-// 🤖 LUNA BOT (chat)
+// 🤖 LUNA BOT
 // ==========================
 function lunaBot(text) {
   const now = Date.now();
   if (now - window.LUNA.lastBotMessage < 2200) return;
   window.LUNA.lastBotMessage = now;
-
   set(ref(db, `${CHAT_PATH}/${now}`), { user: "Luna", text: sanitizePlainASCII(text) });
 }
 
@@ -924,7 +809,7 @@ function init() {
   if (DEBUG) {
     console.log("[APP] loaded");
     console.log("[APP] db =", firebaseConfig.databaseURL);
-    console.log("### LUNA SCRIPT MARKER 2025-12-28 CAPOLAVORO ###");
+    console.log("### LUNA SCRIPT MARKER 2025-12-28 VINCENTE ###");
   }
 
   playIntro();
@@ -942,7 +827,6 @@ function init() {
   listenSpin();
   idlePulse();
 
-  // export comodi per console
   window.LUNA.migrateTodayToRichFormat = migrateTodayToRichFormat;
   window.LUNA.ensureDailyOroscopoUpToDate = ensureDailyOroscopoUpToDate;
   window.LUNA.postSpotToBacheca = postSpotToBacheca;
