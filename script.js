@@ -8,9 +8,10 @@
 // ✅ auto daily init + lock globale (1 volta al giorno)
 // ✅ Oroscopo ricco compatibile
 // ✅ POST bacheca: OR0SCOPO + POST NEUTRO (indipendente)
-// ✅ COPIA POST: genera HTML incollabile (img/gif + video o musica invisibile)
-// ✅ COPIA POST ROBUSTA: NO <script>, NO onclick (per siti che bloccano JS inline)
-// ✅ Musica nel post: usa data-attribute (serve handler nella bacheca)
+// ✅ COPIA POST: HTML incollabile (img/gif + video o musica invisibile)
+// ✅ COPIA POST ROBUSTA: NO <script>, NO onclick (bacheche safe)
+// ✅ Bacheca: handler globale per ASCOLTA/STOP su post incollati
+// ✅ GIF/IMG: cover 100%
 // ==========================
 
 const DEBUG = true;
@@ -113,7 +114,7 @@ function parseCurrentDayFromDb(v) {
 }
 
 // ==========================
-// 🧼 SANITIZER ASCII (NO STRANI / DISCORD SAFE)
+// 🧼 SANITIZER ASCII
 // ==========================
 function sanitizePlainASCII(input) {
   let s = String(input ?? "");
@@ -143,23 +144,17 @@ function normalizeLink(raw) {
 function extractYouTubeId(input) {
   const s = String(input || "").trim();
   if (!s) return "";
-
-  // ID "puro"
   if (/^[a-zA-Z0-9_-]{6,20}$/.test(s)) return s;
 
-  // youtu.be/ID
   let m = s.match(/youtu\.be\/([a-zA-Z0-9_-]{6,20})/i);
   if (m) return m[1];
 
-  // youtube.com/watch?v=ID
   m = s.match(/[?&]v=([a-zA-Z0-9_-]{6,20})/i);
   if (m) return m[1];
 
-  // youtube.com/embed/ID
   m = s.match(/\/embed\/([a-zA-Z0-9_-]{6,20})/i);
   if (m) return m[1];
 
-  // youtube.com/shorts/ID
   m = s.match(/\/shorts\/([a-zA-Z0-9_-]{6,20})/i);
   if (m) return m[1];
 
@@ -298,54 +293,6 @@ function scheduleMidnightResync() {
     ensureDailyOroscopoUpToDate().catch(()=>{});
     scheduleMidnightResync();
   }, ms);
-}
-
-// ==========================
-// 🧿 MIGRAZIONE (console)
-// ==========================
-async function migrateTodayToRichFormat() {
-  if (!isAdmin) return alert("Solo ADMIN puo migrare il daily.");
-  if (!CURRENT_DAY) return alert("CURRENT_DAY non disponibile.");
-
-  const day = CURRENT_DAY;
-  const dailyRefToday = ref(db, `${ORO_DAILY_BASE}/${day}`);
-  const snap = await get(dailyRefToday);
-  if (!snap.exists()) return alert("Daily non trovato per " + day);
-
-  const cur = snap.val() || {};
-  const def = buildDefaultDailyPayload();
-  const patch = {};
-  let converted = 0;
-
-  for (const sign of Object.keys(def)) {
-    if (sign === "updatedAt") continue;
-    const v = cur[sign];
-
-    if (v == null) {
-      patch[sign] = def[sign];
-      converted++;
-      continue;
-    }
-
-    if (typeof v === "string") {
-      const d = def[sign];
-      patch[sign] = { testo: v, amore: d.amore, lavoro: d.lavoro, fortuna: d.fortuna, consiglio: d.consiglio };
-      converted++;
-      continue;
-    }
-
-    if (v && typeof v === "object") {
-      const d = def[sign];
-      for (const k of ["testo","amore","lavoro","fortuna","consiglio"]) {
-        if (v[k] == null || v[k] === "") patch[`${sign}/${k}`] = d[k];
-      }
-    }
-  }
-
-  patch.updatedAt = Date.now();
-  await update(dailyRefToday, patch);
-
-  alert(`Migrazione completata: ${converted} segni convertiti per ${day}.`);
 }
 
 // ==========================
@@ -770,11 +717,11 @@ async function postNeutralToBacheca() {
 }
 
 // ==========================
-// 🧾 COPIA POST — HTML incollabile (ROBUSTO PER BACHECHE)
+// 🧾 COPIA POST — HTML incollabile (ROBUSTO)
 // ✅ NO <script>
-// ✅ NO onclick
-// ✅ Musica controllata via data-attribute (handler nella bacheca)
-// ✅ GIF/IMG riempie 100% del box (cover)
+// ✅ NO onclick (bacheche le bloccano)
+// ✅ musica via data-attribute (handler globale sotto)
+// ✅ GIF/IMG cover 100%
 // ==========================
 function escapeHtml(s){
   return String(s||"")
@@ -889,6 +836,8 @@ function buildPublishablePostHTML({ title, body, link, image, videoId, musicId, 
             border:1px solid rgba(255,255,255,.18);
           "
         >STOP</button>
+
+        <span data-ps-frameholder style="display:none;"></span>
       </span>
       ` : ``}
     </div>
@@ -896,20 +845,9 @@ function buildPublishablePostHTML({ title, body, link, image, videoId, musicId, 
 
   ${img ? `
   <div style="background:rgba(0,0,0,.35); border-top:1px solid rgba(255,255,255,.10);">
-    <div style="
-      width:100%;
-      height:70vh;
-      max-height:760px;
-      background:#000;
-      overflow:hidden;
-    ">
+    <div style="width:100%;height:70vh;max-height:760px;background:#000;overflow:hidden;">
       <img src="${escImg}" alt="Pianeta Segreto"
-        style="
-          width:100%;
-          height:100%;
-          display:block;
-          object-fit:cover;
-        " />
+        style="width:100%;height:100%;display:block;object-fit:cover;" />
     </div>
   </div>
   ` : ``}
@@ -923,7 +861,6 @@ function buildPublishablePostHTML({ title, body, link, image, videoId, musicId, 
       allowfullscreen></iframe>
   </div>
   ` : ``}
-
 </div>
 `.trim();
 }
@@ -944,6 +881,64 @@ async function copyPostHTML(){
     document.body.removeChild(ta);
     alert("COPIA POST OK (fallback).");
   }
+}
+
+// ==========================
+// 🎧 HANDLER GLOBALE BACHECA: ASCOLTA / STOP
+// - Funziona anche per post "incollati" (delegation)
+// - Crea iframe 1x1 (compatibile) SOLO al click
+// ==========================
+function initBachecaAudioDelegation(){
+  document.addEventListener("click", (e) => {
+    const playBtn = e.target.closest?.("[data-ps-play]");
+    const stopBtn = e.target.closest?.("[data-ps-stop]");
+
+    if (!playBtn && !stopBtn) return;
+
+    const wrap = (playBtn || stopBtn).closest("[data-psmusic]");
+    if (!wrap) return;
+
+    const yt = wrap.getAttribute("data-yt") || "";
+    const holder = wrap.querySelector("[data-ps-frameholder]");
+
+    // helper: trova o crea iframe
+    const getOrCreateFrame = () => {
+      let fr = holder?.querySelector("iframe");
+      if (!fr) {
+        fr = document.createElement("iframe");
+        fr.setAttribute("allow", "autoplay; encrypted-media");
+        fr.style.width = "1px";
+        fr.style.height = "1px";
+        fr.style.opacity = "0";
+        fr.style.position = "fixed";
+        fr.style.left = "0";
+        fr.style.bottom = "0";
+        fr.style.pointerEvents = "none";
+        fr.style.border = "0";
+        fr.src = "about:blank";
+        holder?.appendChild(fr);
+      }
+      return fr;
+    };
+
+    if (playBtn) {
+      if (!yt) return;
+      const fr = getOrCreateFrame();
+
+      // Ferma tutte le altre musiche attive (1 alla volta)
+      document.querySelectorAll("[data-ps-frameholder] iframe").forEach((other) => {
+        if (other !== fr) other.src = "about:blank";
+      });
+
+      // Avvia
+      fr.src = `https://www.youtube.com/embed/${encodeURIComponent(yt)}?autoplay=1&loop=1&playlist=${encodeURIComponent(yt)}&controls=0&rel=0&modestbranding=1&playsinline=1`;
+    }
+
+    if (stopBtn) {
+      const fr = holder?.querySelector("iframe");
+      if (fr) fr.src = "about:blank";
+    }
+  });
 }
 
 // ==========================
@@ -1079,11 +1074,10 @@ async function init() {
   initAdmin();
   idlePulse();
 
-  // exports utili
-  window.LUNA.migrateTodayToRichFormat = migrateTodayToRichFormat;
-  window.LUNA.ensureDailyOroscopoUpToDate = ensureDailyOroscopoUpToDate;
+  // ✅ fondamentale per far suonare la musica nei post incollati
+  initBachecaAudioDelegation();
 
-  // export utili per UI
+  // exports utili
   window.LUNA.copyPostHTML = copyPostHTML;
   window.LUNA.buildPublishablePostHTML = buildPublishablePostHTML;
 }
