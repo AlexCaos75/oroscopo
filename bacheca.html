@@ -1,8 +1,9 @@
 // ==========================
-// 🧾 POST SPOT (BACHECA PIANETA SEGRETO)
+// 🧾 POST SPOT (BACHECA PIANETA SEGRETO) — CAPOLAVORO
 // - niente segni zodiacali
-// - testo elegante scelto da Luna
+// - testo elegante scelto da Luna (ASCII safe)
 // - immagine + youtube a scelta (o random)
+// - salva payload compatibile con bacheca.html
 // ==========================
 async function postSpotToBacheca() {
   if (!isAdmin) return alert("Solo ADMIN puo postare in bacheca.");
@@ -10,65 +11,72 @@ async function postSpotToBacheca() {
   const author = sanitizePlainASCII(window.LUNA.user || "Luna Vallyy");
   const oracle = "Oracolo di Pianeta Segreto";
 
-  // ✅ TESTO SCELTO DA LUNA (pulito, no caratteri strani)
-  const title = sanitizePlainASCII("Luna Vallyy - Oracolo di Pianeta Segreto");
+  // ✅ Titolo/sottotitolo bacheca (no accenti, no emoji, no virgolette strane)
+  const title = sanitizePlainASCII("LUNA VALLYY - ORACOLO DI PIANETA SEGRETO");
   const subtitle = sanitizePlainASCII("Il nostro oracolo ci accompagna. Messaggio pulito, pronto anche per Discord.");
 
-  const body =
-    sanitizePlainASCII(
-      "Oroscopo di Luna\n\n" +
-      "Il destino parla a chi sa ascoltare.\n" +
-      "Oggi il cielo invita alla chiarezza,\n" +
-      "alla scelta consapevole,\n" +
-      "alla fiducia nel proprio cammino.\n\n" +
-      "Segui cio che senti vero.\n"
-    );
+  // ✅ Testo (puoi cambiarlo quando vuoi: resta sempre pulito)
+  const body = sanitizePlainASCII(
+    "OROSCOPO DI LUNA\n\n" +
+    "Il destino parla a chi sa ascoltare.\n" +
+    "Oggi il cielo invita alla chiarezza,\n" +
+    "alla scelta consapevole,\n" +
+    "alla fiducia nel proprio cammino.\n\n" +
+    "Segui cio che senti vero.\n"
+  );
 
-  // ✅ LINK DEL BOTTONE (fisso)
+  // ✅ Link fisso del bottone / accesso
   const link = "https://alexcaos75.github.io/oroscopo/";
 
-  // ✅ IMMAGINI: mettile nella cartella /immagini nella stessa repo
-  // Se un file non esiste, semplicemente non si vede (ma il post resta ok).
+  // ✅ Immagini (relative nella repo GitHub Pages, stessa cartella /immagini)
+  // Puoi mettere PNG/JPG/WEBP. Se non esiste -> non viene mostrata, ma il post resta OK.
   const IMAGE_POOL = [
     "immagini/spot1.jpg",
     "immagini/spot2.jpg",
     "immagini/spot3.jpg"
   ];
 
-  // ✅ YOUTUBE: inserisci SOLO ID (non link completo)
+  // ✅ YouTube: solo ID video (non link completo)
+  // Esempio: https://www.youtube.com/watch?v=dQw4w9WgXcQ  ->  dQw4w9WgXcQ
   const YT_POOL = [
-    "dQw4w9WgXcQ"
+    "" // metti un ID vero oppure lascia vuoto
+    // "dQw4w9WgXcQ"
   ];
 
-  // scegli (random)
-  const image = IMAGE_POOL.length ? IMAGE_POOL[Math.floor(Math.random() * IMAGE_POOL.length)] : "";
-  const video = YT_POOL.length ? YT_POOL[Math.floor(Math.random() * YT_POOL.length)] : "";
+  // selezione random (se vuoi fisso: metti direttamente stringa)
+  const image = (IMAGE_POOL.length)
+    ? IMAGE_POOL[Math.floor(Math.random() * IMAGE_POOL.length)]
+    : "";
 
-  // ✅ Testo Discord: SOLO testo + link
-  const discordText =
-    sanitizePlainASCII(
-      `${title}\n` +
-      `${subtitle}\n\n` +
-      `${body}\n\n` +
-      `Link: ${link}`
-    );
+  const video = (YT_POOL.length)
+    ? (YT_POOL[Math.floor(Math.random() * YT_POOL.length)] || "")
+    : "";
 
+  // ✅ Discord safe: SOLO testo + link
+  const discordText = sanitizePlainASCII(
+    `${title}\n` +
+    `${subtitle}\n\n` +
+    `${body}\n\n` +
+    `LINK: ${link}`
+  );
+
+  // payload bacheca (SPOT = evento separato, non oroscopo segni)
   const payload = {
     at: Date.now(),
+    mode: "SPOT",
+    tag: "Pianeta Segreto",
     author,
     oracle,
     title,
     subtitle,
     text: discordText,
-    image,    // puo essere "" oppure "immagini/spot1.jpg" o URL esterno
-    video,    // puo essere "" oppure ID YouTube
-    link,
-    tag: "Pianeta Segreto",
-    mode: "SPOT"
+    image: sanitizePlainASCII(image), // stringa semplice
+    video: sanitizePlainASCII(video), // ID semplice
+    link: sanitizePlainASCII(link)
   };
 
   await set(ref(db, BACHECA_LATEST), payload);
 
-  lunaBot("Bacheca aggiornata: messaggio SPOT pubblicato.");
-  alert("POST OK: bacheca aggiornata.");
+  lunaBot("Bacheca aggiornata: SPOT pubblicato dal Pianeta Segreto.");
+  alert("POST OK: SPOT pubblicato in bacheca.");
 }
