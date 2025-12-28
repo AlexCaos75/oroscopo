@@ -809,12 +809,15 @@ async function postNeutralToBacheca() {
 }
 
 // ==========================
-// 🧾 COPIA POST — genera HTML incollabile (ROBUSTO)
-// ✅ Accetta LINK oppure EMBED (iframe) -> ricava ID
-// ✅ Musica invisibile: div display:block + visibility:hidden (il tuo trucco)
-// ✅ GIF/IMG: COVER “adeguato” (riempie sempre, taglio minimo al centro)
-// ⚠️ Nota: alcuni siti NON permettono iframe/onclick. Su Pianeta Segreto funziona.
+// 🧾 COPIA POST — genera HTML incollabile (SOTTO 5000)
+// ✅ ultra compatto (bacheche con limite 5000)
+// ✅ no <script>
+// ✅ link youtube -> embed automatico
+// ✅ musica/video via iframe embed
+// ✅ immagine/gif cover “adeguato”
 // ==========================
+const BACHECA_LIMIT = 5000;
+
 function escapeHtml(s){
   return String(s||"")
     .replaceAll("&","&amp;")
@@ -824,199 +827,152 @@ function escapeHtml(s){
     .replaceAll("'","&#039;");
 }
 
+function extractYouTubeId(input) {
+  const s = String(input || "").trim();
+  if (!s) return "";
+  if (/^[a-zA-Z0-9_-]{6,20}$/.test(s)) return s;
+
+  let m = s.match(/youtu\.be\/([a-zA-Z0-9_-]{6,20})/i);
+  if (m) return m[1];
+
+  m = s.match(/[?&]v=([a-zA-Z0-9_-]{6,20})/i);
+  if (m) return m[1];
+
+  m = s.match(/\/embed\/([a-zA-Z0-9_-]{6,20})/i);
+  if (m) return m[1];
+
+  return "";
+}
+
+// ✅ accetta:
+// - ID
+// - link youtube
+// - codice embed <iframe ...src=".../embed/ID"...>
+function extractYouTubeIdFromAny(input){
+  const s = String(input||"").trim();
+  if (!s) return "";
+  // se incolli direttamente iframe embed
+  const m = s.match(/youtube\.com\/embed\/([a-zA-Z0-9_-]{6,20})/i);
+  if (m) return m[1];
+  return extractYouTubeId(s);
+}
+
+// compatta: toglie spazi inutili e nuove righe ripetute
+function minifyHtml(html){
+  return String(html)
+    .replace(/\s{2,}/g, " ")
+    .replace(/>\s+</g, "><")
+    .trim();
+}
+
+// se troppo lungo: taglia body progressivamente
+function fitToLimit({title, body, link, image, videoId, musicId, videoMode}){
+  let b = String(body||"");
+  let html = buildPublishablePostHTML({title, body:b, link, image, videoId, musicId, videoMode});
+  html = minifyHtml(html);
+
+  if (html.length <= BACHECA_LIMIT) return html;
+
+  // taglio “intelligente”: riduco body finché rientra
+  // minimo 80 char, poi aggiungo "…"
+  let max = Math.max(80, b.length);
+  while (max > 80) {
+    max = Math.floor(max * 0.88);
+    const cut = b.slice(0, max).trim() + "…";
+    html = minifyHtml(buildPublishablePostHTML({title, body:cut, link, image, videoId, musicId, videoMode}));
+    if (html.length <= BACHECA_LIMIT) return html;
+  }
+
+  // ultima spiaggia: tolgo del tutto body e lascio solo titolo+link
+  html = minifyHtml(buildPublishablePostHTML({
+    title,
+    body: "",
+    link,
+    image,
+    videoId,
+    musicId,
+    videoMode
+  }));
+
+  // se ancora non basta, tolgo anche immagine/video/musica
+  if (html.length > BACHECA_LIMIT) {
+    html = minifyHtml(buildPublishablePostHTML({
+      title,
+      body: "",
+      link,
+      image: "",
+      videoId: "",
+      musicId: "",
+      videoMode: "visible"
+    }));
+  }
+
+  return html.slice(0, BACHECA_LIMIT - 1);
+}
+
 function buildPublishablePostHTML({ title, body, link, image, videoId, musicId, videoMode }) {
-  const t = title || "Luna Vallyy - Oracolo di Pianeta Segreto";
-  const b = body  || "Il nostro oracolo ci accompagna.\n\nQuando il cielo tace, ascolta il cuore.";
-  const l = link  || "https://alexcaos75.github.io/oroscopo/";
+  const t = escapeHtml(title || "Luna Vallyy - Oracolo di Pianeta Segreto");
+  const bRaw = String(body || "").trim();
+  const b = bRaw ? escapeHtml(bRaw) : "";
+  const l = escapeHtml(link || "https://alexcaos75.github.io/oroscopo/");
 
-  const hasImg = !!(image && String(image).trim());
-  const imgSrc = hasImg ? String(image).trim() : "";
+  const img = String(image || "").trim();
+  const hasImg = !!img;
+  const imgSrc = escapeHtml(img);
 
-  // video visibile oppure musica invisibile
-  const vid = (videoMode === "visible") ? (videoId || "") : "";
-  const mus = (videoMode === "hidden") ? (musicId || videoId || "") : "";
+  const vid = (videoMode === "visible") ? extractYouTubeIdFromAny(videoId) : "";
+  const mus = (videoMode === "hidden") ? extractYouTubeIdFromAny(musicId || videoId) : "";
 
-  const escT = escapeHtml(t);
-  const escB = escapeHtml(b);
-  const escL = escapeHtml(l);
-  const escImg = escapeHtml(imgSrc);
-  const escVid = escapeHtml(vid);
-  const escMus = escapeHtml(mus);
-
-  const musSrcStop = "about:blank";
-  const musSrcPlay =
-    `https://www.youtube.com/embed/${escMus}` +
-    `?autoplay=1&loop=1&playlist=${escMus}&controls=0&rel=0&modestbranding=1&playsinline=1`;
-
-  const vidSrc =
-    `https://www.youtube.com/embed/${escVid}` +
-    `?rel=0&modestbranding=1&playsinline=1`;
-
+  // ✅ ULTRA-COMPATTO: poche style inline
+  // ✅ immagine: cover + altezza fissa “umana” (non infinita)
+  // ✅ musica: iframe hidden (1x1 fixed) autoplay solo quando la bacheca lo permette (molte non lo permettono)
+  //    -> almeno l'embed è corretto e corto
   return `
-<div style="
-  max-width:920px;
-  margin:18px auto;
-  border-radius:26px;
-  overflow:hidden;
-  border:1px solid rgba(255,255,255,.14);
-  background:linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.06));
-  box-shadow:0 26px 90px rgba(0,0,0,.55);
-">
-  <div style="
-    padding:18px 18px 14px;
-    background:
-      radial-gradient(900px 420px at 10% 0%, rgba(180,80,255,.25), transparent 60%),
-      radial-gradient(900px 420px at 95% 20%, rgba(40,230,255,.20), transparent 60%),
-      radial-gradient(900px 420px at 50% 110%, rgba(255,80,210,.14), transparent 60%),
-      rgba(0,0,0,.22);
-  ">
-    <div style="display:flex;align-items:center;gap:12px;">
-      <div style="
-        width:46px;height:46px;border-radius:16px;
-        background:linear-gradient(135deg, rgba(180,80,255,.90), rgba(40,230,255,.40));
-        border:1px solid rgba(255,255,255,.18);
-        display:grid;place-items:center;
-        font-weight:900;letter-spacing:.6px;
-        color:white;
-        box-shadow:0 18px 60px rgba(110,120,255,.22);
-      ">PS</div>
-      <div style="min-width:0;">
-        <div style="font-weight:950;font-size:18px;letter-spacing:.2px;color:rgba(255,255,255,.95);">
-          ${escT}
-        </div>
-        <div style="margin-top:6px;font-size:13px;opacity:.84;color:rgba(255,255,255,.86);line-height:1.3;">
-          Il Pianeta Segreto sussurra: ascolta con calma e scegli con eleganza.
-        </div>
-      </div>
-    </div>
-
-    <div style="
-      margin-top:14px;
-      white-space:pre-wrap;
-      line-height:1.55;
-      font-family:ui-monospace, Menlo, Consolas, monospace;
-      font-size:13.6px;
-      color:rgba(255,255,255,.92);
-      background:rgba(0,0,0,.22);
-      border:1px solid rgba(255,255,255,.14);
-      border-radius:18px;
-      padding:14px;
-    ">${escB}</div>
-
-    <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
-      <a href="${escL}" target="_blank" rel="noopener"
-        style="
-          display:inline-flex;align-items:center;gap:10px;
-          padding:12px 16px;border-radius:999px;
-          text-decoration:none;
-          font-weight:950;font-size:13px;letter-spacing:.35px;
-          color:white;
-          background:linear-gradient(135deg, rgba(180,80,255,.74), rgba(40,230,255,.30));
-          border:1px solid rgba(255,255,255,.18);
-          box-shadow:0 18px 56px rgba(80,120,255,.22);
-        ">
-        APRI ORACOLO
-      </a>
-
+<div style="max-width:920px;margin:10px auto;border:1px solid rgba(255,255,255,.15);border-radius:18px;overflow:hidden;background:rgba(0,0,0,.35)">
+  <div style="padding:12px 14px">
+    <div style="font-weight:900;font-size:16px;letter-spacing:.2px;color:#fff">${t}</div>
+    ${b ? `<div style="margin-top:8px;white-space:pre-wrap;line-height:1.45;font:13px ui-monospace,Menlo,Consolas,monospace;color:rgba(255,255,255,.92)">${b}</div>` : ``}
+    <div style="margin-top:10px">
+      <a href="${l}" target="_blank" rel="noopener" style="display:inline-block;padding:10px 14px;border-radius:999px;text-decoration:none;font-weight:900;font-size:12px;letter-spacing:.3px;color:#fff;border:1px solid rgba(255,255,255,.18);background:rgba(140,170,255,.22)">APRI ORACOLO</a>
       ${mus ? `
-      <span data-psmusic style="display:inline-flex;gap:10px;flex-wrap:wrap;align-items:center;">
-        <button
-          style="
-            padding:12px 16px;border-radius:999px;
-            font-weight:950;font-size:13px;letter-spacing:.35px;
-            color:white;cursor:pointer;
-            background:linear-gradient(135deg, rgba(255,120,220,.40), rgba(120,120,255,.38));
-            border:1px solid rgba(255,255,255,.18);
-            box-shadow:0 18px 56px rgba(0,0,0,.35);
-          "
-          onclick="(function(btn){
-            try{
-              var wrap = btn.closest('[data-psmusic]');
-              if(!wrap) return;
-              var fr = wrap.querySelector('iframe');
-              if(!fr) return;
-              fr.src='${musSrcPlay}';
-            }catch(e){}
-          })(this);"
-        >ASCOLTA</button>
-
-        <button
-          style="
-            padding:12px 16px;border-radius:999px;
-            font-weight:950;font-size:13px;letter-spacing:.35px;
-            color:white;cursor:pointer;
-            background:rgba(255,255,255,.10);
-            border:1px solid rgba(255,255,255,.18);
-          "
-          onclick="(function(btn){
-            try{
-              var wrap = btn.closest('[data-psmusic]');
-              if(!wrap) return;
-              var fr = wrap.querySelector('iframe');
-              if(!fr) return;
-              fr.src='${musSrcStop}';
-            }catch(e){}
-          })(this);"
-        >STOP</button>
-
-        <!-- ✅ IL TUO TRUCCO: display:block + visibility:hidden -->
-        <div style="display:block; visibility:hidden; height:0; overflow:hidden;">
-          <iframe width="1" height="1"
-            src="about:blank"
-            title="PS Music"
-            frameborder="0"
-            allow="autoplay; encrypted-media; picture-in-picture"
-            referrerpolicy="strict-origin-when-cross-origin"
-            allowfullscreen></iframe>
-        </div>
-      </span>
-      ` : ``}
+      <span style="margin-left:8px;font-weight:900;font-size:12px;opacity:.9">ASCOLTA ↓</span>
+      <div id="map" style="display:block;visibility:hidden;height:0;overflow:hidden">
+        <iframe src="https://www.youtube.com/embed/${escapeHtml(mus)}?autoplay=1&loop=1&playlist=${escapeHtml(mus)}&controls=0&rel=0&modestbranding=1&playsinline=1"
+          width="1" height="1" frameborder="0"
+          allow="autoplay; encrypted-media; picture-in-picture"
+          referrerpolicy="strict-origin-when-cross-origin"
+          allowfullscreen></iframe>
+      </div>` : ``}
     </div>
   </div>
 
   ${hasImg ? `
-  <div style="background:rgba(0,0,0,.35); border-top:1px solid rgba(255,255,255,.10);">
-    <div style="
-      width:100%;
-      height:clamp(320px, 62vh, 760px);
-      background:#000;
-      overflow:hidden;
-    ">
-      <img src="${escImg}" alt="Pianeta Segreto"
-        style="
-          width:100%;
-          height:100%;
-          display:block;
-          object-fit:cover;          /* ✅ riempie sempre */
-          object-position:center;    /* ✅ taglio minimo al centro */
-          background:#000;
-        " />
-    </div>
-  </div>
-  ` : ``}
+  <div style="border-top:1px solid rgba(255,255,255,.12);background:#000">
+    <img src="${imgSrc}" alt="Pianeta Segreto"
+      style="display:block;width:100%;height:520px;max-height:70vh;object-fit:cover;background:#000" />
+  </div>` : ``}
 
   ${vid ? `
-  <div style="padding:16px;background:rgba(0,0,0,.25);border-top:1px solid rgba(255,255,255,.10);">
-    <iframe
-      src="${vidSrc}"
-      style="width:100%;aspect-ratio:16/9;border-radius:18px;border:1px solid rgba(255,255,255,.14);"
-      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+  <div style="border-top:1px solid rgba(255,255,255,.12);padding:10px;background:rgba(0,0,0,.25)">
+    <iframe src="https://www.youtube.com/embed/${escapeHtml(vid)}?rel=0&modestbranding=1&playsinline=1"
+      style="width:100%;aspect-ratio:16/9;border:0;border-radius:14px;overflow:hidden"
+      allow="accelerometer; autoplay; encrypted-media; picture-in-picture"
       referrerpolicy="strict-origin-when-cross-origin"
       allowfullscreen></iframe>
-  </div>
-  ` : ``}
-
+  </div>` : ``}
 </div>
 `.trim();
 }
 
 async function copyPostHTML(){
   const { title, body, link, image, videoId, musicId, videoMode } = readNeutralFields();
-  const html = buildPublishablePostHTML({ title, body, link, image, videoId, musicId, videoMode });
+
+  // ✅ genera e “rientra” sotto 5000
+  const html = fitToLimit({ title, body, link, image, videoId, musicId, videoMode });
 
   try{
     await navigator.clipboard.writeText(html);
-    alert("COPIA POST OK: HTML copiato (incollalo in bacheca).");
+    alert(`COPIA POST OK (${html.length}/${BACHECA_LIMIT}). Incollalo in bacheca.`);
   }catch{
     const ta = document.createElement("textarea");
     ta.value = html;
@@ -1024,9 +980,10 @@ async function copyPostHTML(){
     ta.select();
     document.execCommand("copy");
     document.body.removeChild(ta);
-    alert("COPIA POST OK (fallback).");
+    alert(`COPIA POST OK (${html.length}/${BACHECA_LIMIT}) (fallback).`);
   }
 }
+
 
 // ==========================
 // 📋 COPIA DISCORD (per segno selezionato)
@@ -1164,3 +1121,4 @@ async function init() {
   window.LUNA.migrateTodayToRichFormat = migrateTodayToRichFormat;
   window.LUNA.ensureDailyOroscopoUpToDate = ensureDailyOroscopoUpToDate;
 }
+
