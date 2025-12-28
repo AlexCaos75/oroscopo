@@ -10,15 +10,20 @@
   --safe-left: env(safe-area-inset-left);
 
   --focus: rgba(140,170,255,.95);
+
+  /* ✅ modale image tuning */
+  --hero-h: 420px;
+  --hero-h-sm: 300px;
+  --hero-radius: 18px;
+
+  /* ✅ “cover adeguato” */
+  --hero-zoom: 1.03;         /* minimo filo */
+  --hero-zoom-hover: 1.05;   /* se vuoi aumentare in futuro */
 }
 
-html, body{
-  height: 100%;
-}
+html, body{ height: 100%; }
 
-/* ✅ hidden “pulito”: invisibile + non cliccabile
-   Nota: NON uso display:none perché alcune animazioni/transizioni
-   o JS possono aspettarsi che resti nel flow. */
+/* ✅ hidden “pulito” */
 .hidden{
   opacity: 0;
   pointer-events: none;
@@ -41,7 +46,6 @@ body.lock{ overflow: hidden; }
    BODY
 ======================= */
 body{
-  /* ✅ fix mobile: 100vh “vero” */
   min-height: 100vh;
   min-height: 100svh;
   min-height: 100dvh;
@@ -59,11 +63,10 @@ body{
   color: white;
 
   overflow: hidden;
-
-  /* evita rimbalzi su iOS */
   overscroll-behavior: none;
 
   animation: backgroundPulse 6s ease-in-out infinite alternate;
+
   padding:
     calc(0px + var(--safe-top))
     calc(0px + var(--safe-right))
@@ -380,8 +383,6 @@ body{
   justify-content:center;
   align-items:center;
   z-index: 100;
-
-  /* ✅ evita scroll “sotto” su mobile */
   overscroll-behavior: contain;
 }
 
@@ -390,17 +391,22 @@ body{
   max-width: 860px;
   width: 94%;
   max-height: 90vh;
+
   background: linear-gradient(180deg,#020824,#000);
   border-radius: 24px;
   padding: 22px 24px 28px;
+
   box-shadow:
     0 0 140px rgba(140,170,255,.6),
     inset 0 0 40px rgba(255,255,255,.04);
+
   overflow-y: auto;
   position: relative;
 
-  /* safe bottom */
   padding-bottom: calc(28px + var(--safe-bottom));
+
+  /* ✅ iOS momentum */
+  -webkit-overflow-scrolling: touch;
 }
 
 /* CHIUDI */
@@ -432,22 +438,45 @@ body{
 .close:active{ transform: scale(.98); }
 .close:focus-visible{ outline: 2px solid var(--focus); outline-offset: 2px; }
 
-/* IMMAGINE */
+/* ✅ IMMAGINE MODALE — “COVER ADEGUATO”
+   - prima era contain: spesso “non riempie”
+   - ora: cover + limite + zoom minimo
+   - niente taglio brutto: usiamo background-position center e un “film” */
 .fullscreen-image{
   width:100%;
-  height:420px;
-  border-radius:18px;
+  height: var(--hero-h);
+  border-radius: var(--hero-radius);
   background-color:#000;
   background-position:center;
   background-repeat:no-repeat;
-  background-size: contain;
+
+  /* ✅ cover adeguato */
+  background-size: cover;
+
   box-shadow: 0 0 80px rgba(120,150,255,.35);
   margin-bottom:16px;
+
+  overflow:hidden;
+  position: relative;
+
   transform: scale(1);
   transition: transform .35s ease;
-  overflow:hidden;
 }
-.fullscreen-image.zoom{ transform: scale(1.02); }
+
+/* piccolo film per uniformare gif/immagini troppo chiare/scure */
+.fullscreen-image::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:
+    radial-gradient(1200px 520px at 20% 10%, rgba(180,80,255,.10), transparent 55%),
+    radial-gradient(1000px 520px at 80% 0%, rgba(40,230,255,.08), transparent 60%),
+    linear-gradient(180deg, rgba(0,0,0,.18), rgba(0,0,0,.28));
+  pointer-events:none;
+}
+
+/* ✅ zoom “minimo filo” */
+.fullscreen-image.zoom{ transform: scale(var(--hero-zoom)); }
 
 /* TESTO */
 .oracle-text h2{ font-size: 2rem; margin-bottom: 8px; }
@@ -456,7 +485,7 @@ body{
 
 /* MOBILE (modale) */
 @media (max-width: 520px){
-  .fullscreen-image{ height: 300px; }
+  .fullscreen-image{ height: var(--hero-h-sm); }
   .close{ top: 12px; right: 12px; width: 44px; height: 44px; font-size: 26px; }
 }
 
@@ -473,6 +502,7 @@ body{
   max-height: 90vh;
   overflow: auto;
   padding-bottom: calc(22px + var(--safe-bottom));
+  -webkit-overflow-scrolling: touch;
 }
 
 .admin-panel select,
@@ -602,16 +632,13 @@ body{
   transform: translateZ(0);
 }
 
-/* quando trascini: più “fisico” */
 .chat-luna.dragging{
   cursor: grabbing;
   box-shadow: 0 0 55px rgba(120,150,255,.60);
 }
 
-/* collassata */
 .chat-luna.collapsed{ height: 52px; }
 
-/* disabilitata quando modale aperto */
 .chat-luna.disabled{
   opacity: 0;
   pointer-events: none;
@@ -619,7 +646,6 @@ body{
   transition: opacity .25s ease, transform .25s ease;
 }
 
-/* header draggable */
 .chat-header{
   padding: 10px 12px;
   background: linear-gradient(180deg,#0b1435,#020824);
@@ -628,7 +654,7 @@ body{
   align-items:center;
   cursor: grab;
   user-select:none;
-  touch-action: none; /* ✅ fondamentale per pointer drag su mobile */
+  touch-action: none;
 }
 
 .chat-actions{
@@ -667,9 +693,9 @@ body{
   overflow-x: hidden;
   scrollbar-width: thin;
   overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
-/* messaggio */
 .chat-msg{
   margin-bottom: 8px;
   line-height: 1.35;
@@ -682,7 +708,6 @@ body{
   border: 1px solid rgba(255,255,255,.06);
 }
 
-/* dal tuo JS: .luna e .me */
 .chat-msg.luna{
   background: rgba(140,170,255,.08);
   border-color: rgba(140,170,255,.22);
@@ -757,7 +782,6 @@ body{
   .wheel{ width: 340px; height: 340px; }
   .wheel-glow{ width: 520px; height: 520px; }
 
-  /* ✅ palla orbitale + falce orbitale ridotte e meno esterne */
   .wheel-core::before{
     width: 40px; height: 40px;
     transform: translate(-50%, -50%) translateX(148px);
@@ -768,6 +792,7 @@ body{
   }
 
   .controls{ top: calc(100% + 14px); }
+
   .chat-luna{
     width: 320px;
     height: 400px;
