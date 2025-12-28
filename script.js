@@ -812,8 +812,8 @@ async function postNeutralToBacheca() {
 // 🧾 COPIA POST — genera HTML incollabile (SOTTO 5000)
 // ✅ ultra compatto (bacheche con limite 5000)
 // ✅ no <script>
-// ✅ link youtube -> embed automatico
-// ✅ musica/video via iframe embed
+// ✅ usa la TUA extractYouTubeId() già presente
+// ✅ accetta anche codice <iframe ...> come input
 // ✅ immagine/gif cover “adeguato”
 // ==========================
 const BACHECA_LIMIT = 5000;
@@ -827,38 +827,20 @@ function escapeHtml(s){
     .replaceAll("'","&#039;");
 }
 
-function extractYouTubeId(input) {
-  const s = String(input || "").trim();
-  if (!s) return "";
-  if (/^[a-zA-Z0-9_-]{6,20}$/.test(s)) return s;
-
-  let m = s.match(/youtu\.be\/([a-zA-Z0-9_-]{6,20})/i);
-  if (m) return m[1];
-
-  m = s.match(/[?&]v=([a-zA-Z0-9_-]{6,20})/i);
-  if (m) return m[1];
-
-  m = s.match(/\/embed\/([a-zA-Z0-9_-]{6,20})/i);
-  if (m) return m[1];
-
-  return "";
-}
-
 // ✅ accetta:
 // - ID
 // - link youtube
 // - codice embed <iframe ...src=".../embed/ID"...>
-function extractYouTubeIdFromAny(input){
+function psExtractYouTubeIdFromAny(input){
   const s = String(input||"").trim();
   if (!s) return "";
-  // se incolli direttamente iframe embed
   const m = s.match(/youtube\.com\/embed\/([a-zA-Z0-9_-]{6,20})/i);
   if (m) return m[1];
+  // usa la tua funzione già esistente
   return extractYouTubeId(s);
 }
 
-// compatta: toglie spazi inutili e nuove righe ripetute
-function minifyHtml(html){
+function psMinifyHtml(html){
   return String(html)
     .replace(/\s{2,}/g, " ")
     .replace(/>\s+</g, "><")
@@ -866,51 +848,37 @@ function minifyHtml(html){
 }
 
 // se troppo lungo: taglia body progressivamente
-function fitToLimit({title, body, link, image, videoId, musicId, videoMode}){
+function psFitToLimit({title, body, link, image, videoId, musicId, videoMode}){
   let b = String(body||"");
-  let html = buildPublishablePostHTML({title, body:b, link, image, videoId, musicId, videoMode});
-  html = minifyHtml(html);
+  let html = psBuildPublishablePostHTML({title, body:b, link, image, videoId, musicId, videoMode});
+  html = psMinifyHtml(html);
 
   if (html.length <= BACHECA_LIMIT) return html;
 
-  // taglio “intelligente”: riduco body finché rientra
-  // minimo 80 char, poi aggiungo "…"
   let max = Math.max(80, b.length);
   while (max > 80) {
     max = Math.floor(max * 0.88);
     const cut = b.slice(0, max).trim() + "…";
-    html = minifyHtml(buildPublishablePostHTML({title, body:cut, link, image, videoId, musicId, videoMode}));
+    html = psMinifyHtml(psBuildPublishablePostHTML({title, body:cut, link, image, videoId, musicId, videoMode}));
     if (html.length <= BACHECA_LIMIT) return html;
   }
 
-  // ultima spiaggia: tolgo del tutto body e lascio solo titolo+link
-  html = minifyHtml(buildPublishablePostHTML({
-    title,
-    body: "",
-    link,
-    image,
-    videoId,
-    musicId,
-    videoMode
+  // ultima spiaggia: solo titolo + link
+  html = psMinifyHtml(psBuildPublishablePostHTML({
+    title, body: "", link, image, videoId, musicId, videoMode
   }));
 
-  // se ancora non basta, tolgo anche immagine/video/musica
+  // se ancora non basta: tolgo tutto tranne link
   if (html.length > BACHECA_LIMIT) {
-    html = minifyHtml(buildPublishablePostHTML({
-      title,
-      body: "",
-      link,
-      image: "",
-      videoId: "",
-      musicId: "",
-      videoMode: "visible"
+    html = psMinifyHtml(psBuildPublishablePostHTML({
+      title, body: "", link, image: "", videoId: "", musicId: "", videoMode: "visible"
     }));
   }
 
   return html.slice(0, BACHECA_LIMIT - 1);
 }
 
-function buildPublishablePostHTML({ title, body, link, image, videoId, musicId, videoMode }) {
+function psBuildPublishablePostHTML({ title, body, link, image, videoId, musicId, videoMode }) {
   const t = escapeHtml(title || "Luna Vallyy - Oracolo di Pianeta Segreto");
   const bRaw = String(body || "").trim();
   const b = bRaw ? escapeHtml(bRaw) : "";
@@ -920,13 +888,9 @@ function buildPublishablePostHTML({ title, body, link, image, videoId, musicId, 
   const hasImg = !!img;
   const imgSrc = escapeHtml(img);
 
-  const vid = (videoMode === "visible") ? extractYouTubeIdFromAny(videoId) : "";
-  const mus = (videoMode === "hidden") ? extractYouTubeIdFromAny(musicId || videoId) : "";
+  const vid = (videoMode === "visible") ? psExtractYouTubeIdFromAny(videoId) : "";
+  const mus = (videoMode === "hidden") ? psExtractYouTubeIdFromAny(musicId || videoId) : "";
 
-  // ✅ ULTRA-COMPATTO: poche style inline
-  // ✅ immagine: cover + altezza fissa “umana” (non infinita)
-  // ✅ musica: iframe hidden (1x1 fixed) autoplay solo quando la bacheca lo permette (molte non lo permettono)
-  //    -> almeno l'embed è corretto e corto
   return `
 <div style="max-width:920px;margin:10px auto;border:1px solid rgba(255,255,255,.15);border-radius:18px;overflow:hidden;background:rgba(0,0,0,.35)">
   <div style="padding:12px 14px">
@@ -966,9 +930,7 @@ function buildPublishablePostHTML({ title, body, link, image, videoId, musicId, 
 
 async function copyPostHTML(){
   const { title, body, link, image, videoId, musicId, videoMode } = readNeutralFields();
-
-  // ✅ genera e “rientra” sotto 5000
-  const html = fitToLimit({ title, body, link, image, videoId, musicId, videoMode });
+  const html = psFitToLimit({ title, body, link, image, videoId, musicId, videoMode });
 
   try{
     await navigator.clipboard.writeText(html);
@@ -1121,4 +1083,5 @@ async function init() {
   window.LUNA.migrateTodayToRichFormat = migrateTodayToRichFormat;
   window.LUNA.ensureDailyOroscopoUpToDate = ensureDailyOroscopoUpToDate;
 }
+
 
