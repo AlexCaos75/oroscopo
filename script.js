@@ -1,10 +1,15 @@
 // ==========================
-// 🔥 RUOTA LUNARE 2026 — CAPOLAVORO VINCENTE
-// ✅ 12 segni sempre presenti (daily)
-// ✅ ruota NON ripete: ciclo 0/12 → 12/12 → reset automatico
-// ✅ "SCELTO" elegante sulle carte uscite
-// ✅ POST OROSCOPO (opzionale) + POST NEUTRO (indipendente)
-// ✅ COPIA POST: genera HTML pronto da incollare (con ASCOLTA/STOP musica invisibile)
+// 🔥 RUOTA LUNARE 2026 — CAPOLAVORO VINCENTE (FULL)
+// ✅ 12 segni: random SENZA ripetizioni fino a completamento
+// ✅ segni scelti restano evidenti -> reset round automatico
+// ✅ multiplayer sync con Firebase runTransaction
+// ✅ daily listener con off()
+// ✅ fallback giorno locale
+// ✅ auto daily init + lock globale (1 volta al giorno)
+// ✅ Oroscopo ricco compatibile
+// ✅ POST bacheca: OR0SCOPO + POST NEUTRO (indipendente)
+// ✅ COPIA POST: genera HTML incollabile (immagine/gif + video o musica invisibile)
+// ✅ Bacheca supporta video visibile o musica invisibile (ASCOLTA/STOP)
 // ==========================
 
 const DEBUG = true;
@@ -44,9 +49,28 @@ window.LUNA = window.LUNA || {};
 window.LUNA.db = db;
 window.LUNA.user = null;
 window.LUNA.isAdmin = false;
+window.LUNA.lastBotMessage = 0;
 window.LUNA.currentDay = null;
 window.LUNA.oroscopo = null;
 
+window.CURRENT_DAY = null;
+window.OROSCOPO_2026 = null;
+
+// ==========================
+// 📡 PATH
+// ==========================
+const CHAT_PATH        = "ruota-lunare/chat";
+const ORO_CURRENT_PATH = "ruota-lunare/oroscopiCurrent";
+const ORO_CURRENT_STR  = "ruota-lunare/oroscopiCurrentDate";
+const ORO_DAILY_BASE   = "ruota-lunare/oroscopiDaily";
+const BACHECA_LATEST   = "ruota-lunare/bacheca/latest";
+
+// 🔥 RUOTA (senza ripetizioni) — stato unico
+const SPIN_STATE_PATH  = "ruota-lunare/spinState";
+
+// ==========================
+// 🧠 STATO
+// ==========================
 let STATE = "BOOT";
 let isAdmin = false;
 let ignoreFirstSpin = true;
@@ -73,33 +97,6 @@ let cards = [];
 let dailyRef = null;
 
 // ==========================
-// 📡 PATH
-// ==========================
-const GAME_PATH        = "ruota-lunare/global-spin";
-const ORO_CURRENT_PATH = "ruota-lunare/oroscopiCurrent";
-const ORO_CURRENT_STR  = "ruota-lunare/oroscopiCurrentDate";
-const ORO_DAILY_BASE   = "ruota-lunare/oroscopiDaily";
-
-const BACHECA_LATEST   = "ruota-lunare/bacheca/latest";
-
-// ✅ stato round (no repeat)
-const ROUND_PATH       = "ruota-lunare/roundState";
-
-// ==========================
-// 🧼 ASCII SAFE
-// ==========================
-function sanitizePlainASCII(input) {
-  let s = String(input ?? "");
-  try { s = s.normalize("NFD").replace(/[\u0300-\u036f]/g, ""); } catch {}
-  s = s.replace(/[“”]/g, '"').replace(/[‘’]/g, "'");
-  s = s.replace(/[^\x09\x0A\x0D\x20-\x7E]/g, " ");
-  s = s.replace(/\?{2,}/g, "?");
-  s = s.replace(/[ \t]+/g, " ");
-  s = s.replace(/\n{3,}/g, "\n\n");
-  return s.trim();
-}
-
-// ==========================
 // 🗓️ DATE KEY
 // ==========================
 function localDayKey() {
@@ -117,7 +114,61 @@ function parseCurrentDayFromDb(v) {
 }
 
 // ==========================
-// 🌟 DEFAULT OROSCOPO RICCO
+// 🧼 SANITIZER ASCII (NO STRANI / DISCORD SAFE)
+// ==========================
+function sanitizePlainASCII(input) {
+  let s = String(input ?? "");
+  try { s = s.normalize("NFD").replace(/[\u0300-\u036f]/g, ""); } catch {}
+  s = s.replace(/[“”]/g, '"').replace(/[‘’]/g, "'");
+  s = s.replace(/[^\x09\x0A\x0D\x20-\x7E]/g, " ");
+  s = s.replace(/\?{2,}/g, "?");
+  s = s.replace(/"{2,}/g, '"');
+  s = s.replace(/'{2,}/g, "'");
+  s = s.replace(/[ \t]+/g, " ");
+  s = s.replace(/\n{3,}/g, "\n\n");
+  return s.trim();
+}
+
+// ==========================
+// 🔗 Helpers: Link / YouTube
+// ==========================
+function normalizeLink(raw) {
+  let s = String(raw || "").trim();
+  if (!s) return "";
+  if (/^https?:\/\//i.test(s)) return s;
+  if (/^[./]/.test(s)) return s;
+  // se metti un dominio senza protocollo
+  if (/^[a-z0-9.-]+\.[a-z]{2,}([/?].*)?$/i.test(s)) return "https://" + s;
+  return "";
+}
+
+function extractYouTubeId(input) {
+  const s = String(input || "").trim();
+  if (!s) return "";
+  // se e' gia' un ID
+  if (/^[a-zA-Z0-9_-]{6,20}$/.test(s)) return s;
+
+  // youtu.be/ID
+  let m = s.match(/youtu\.be\/([a-zA-Z0-9_-]{6,20})/i);
+  if (m) return m[1];
+
+  // youtube.com/watch?v=ID
+  m = s.match(/[?&]v=([a-zA-Z0-9_-]{6,20})/i);
+  if (m) return m[1];
+
+  // youtube.com/embed/ID
+  m = s.match(/\/embed\/([a-zA-Z0-9_-]{6,20})/i);
+  if (m) return m[1];
+
+  return "";
+}
+
+function safeImg(img) {
+  return `immagini/${img || "p01.png"}`;
+}
+
+// ==========================
+// 🌟 DEFAULT OROSCOPO RICCO (ASCII safe)
 // ==========================
 function buildDefaultDailyPayload() {
   const base = {
@@ -138,7 +189,7 @@ function buildDefaultDailyPayload() {
 }
 
 // ==========================
-// 🧩 FORMAT OUTPUT
+// 🧩 FORMAT OUTPUT (stringa o oggetto)
 // ==========================
 function formatHoroscopeForOutput(signName, value) {
   if (typeof value === "string") return value;
@@ -155,10 +206,17 @@ function formatHoroscopeForOutput(signName, value) {
   return `Oroscopo non disponibile per ${signName}.`;
 }
 
-function safeImg(img) { return `immagini/${img || "p01.png"}`; }
+// ==========================
+// 🔗 LINK BASE
+// ==========================
+function getBaseLink() {
+  const { origin, pathname } = window.location;
+  const baseDir = pathname.replace(/\/[^/]*$/, "/");
+  return origin + baseDir + "index.html";
+}
 
 // ==========================
-// 🧩 DAILY INIT (12 segni garantiti)
+// 🧩 AUTO-UPDATE DAILY (LOCK VERO)
 // ==========================
 let lastUpdateTry = 0;
 
@@ -179,6 +237,8 @@ async function ensureDailyOroscopoUpToDate() {
   });
 
   const gotLock = tx?.committed === true && tx?.snapshot?.val()?.locked === true;
+
+  // se non ho lock: considero init "ok" e basta
   if (!gotLock) {
     localStorage.setItem(key, "1");
     return;
@@ -196,12 +256,10 @@ async function ensureDailyOroscopoUpToDate() {
 
     for (const sign of Object.keys(def)) {
       if (sign === "updatedAt") continue;
-
       if (cur[sign] == null) {
         patch[sign] = def[sign];
         continue;
       }
-
       if (typeof cur[sign] === "object" && cur[sign] !== null) {
         const src = cur[sign];
         const dst = def[sign];
@@ -223,6 +281,9 @@ async function ensureDailyOroscopoUpToDate() {
   localStorage.setItem(key, "1");
 }
 
+// ==========================
+// 🌙 RESYNC DOPO MEZZANOTTE
+// ==========================
 function scheduleMidnightResync() {
   const now = new Date();
   const next = new Date(now);
@@ -236,25 +297,81 @@ function scheduleMidnightResync() {
 }
 
 // ==========================
+// 🧿 MIGRAZIONE (console)
+// ==========================
+async function migrateTodayToRichFormat() {
+  if (!isAdmin) return alert("Solo ADMIN puo migrare il daily.");
+  if (!CURRENT_DAY) return alert("CURRENT_DAY non disponibile.");
+
+  const day = CURRENT_DAY;
+  const dailyRefToday = ref(db, `${ORO_DAILY_BASE}/${day}`);
+  const snap = await get(dailyRefToday);
+  if (!snap.exists()) return alert("Daily non trovato per " + day);
+
+  const cur = snap.val() || {};
+  const def = buildDefaultDailyPayload();
+  const patch = {};
+  let converted = 0;
+
+  for (const sign of Object.keys(def)) {
+    if (sign === "updatedAt") continue;
+    const v = cur[sign];
+
+    if (v == null) {
+      patch[sign] = def[sign];
+      converted++;
+      continue;
+    }
+
+    if (typeof v === "string") {
+      const d = def[sign];
+      patch[sign] = { testo: v, amore: d.amore, lavoro: d.lavoro, fortuna: d.fortuna, consiglio: d.consiglio };
+      converted++;
+      continue;
+    }
+
+    if (v && typeof v === "object") {
+      const d = def[sign];
+      for (const k of ["testo","amore","lavoro","fortuna","consiglio"]) {
+        if (v[k] == null || v[k] === "") patch[`${sign}/${k}`] = d[k];
+      }
+    }
+  }
+
+  patch.updatedAt = Date.now();
+  await update(dailyRefToday, patch);
+
+  alert(`Migrazione completata: ${converted} segni convertiti per ${day}.`);
+}
+
+// ==========================
 // 🔮 OROSCOPO REALTIME
 // ==========================
 function initOroscopoRealtime() {
-  onValue(ref(db, ORO_CURRENT_STR), snap => {
-    const dayFromDb = snap.val();
-    const day = (dayFromDb && typeof dayFromDb === "string") ? dayFromDb : localDayKey();
-    attachDaily(day);
-  }, () => {
-    listenCurrentFallback();
-    attachDaily(localDayKey());
-  });
+  onValue(
+    ref(db, ORO_CURRENT_STR),
+    snap => {
+      const dayFromDb = snap.val();
+      const day = (dayFromDb && typeof dayFromDb === "string") ? dayFromDb : localDayKey();
+      attachDaily(day);
+    },
+    _ => {
+      listenCurrentFallback();
+      attachDaily(localDayKey());
+    }
+  );
 }
 
 function listenCurrentFallback() {
-  onValue(ref(db, ORO_CURRENT_PATH), snap => {
-    const raw = snap.val();
-    const parsed = parseCurrentDayFromDb(raw);
-    attachDaily(parsed || localDayKey());
-  });
+  onValue(
+    ref(db, ORO_CURRENT_PATH),
+    snap => {
+      const raw = snap.val();
+      const parsed = parseCurrentDayFromDb(raw);
+      const day = parsed || localDayKey();
+      attachDaily(day);
+    }
+  );
 }
 
 function attachDaily(day) {
@@ -263,61 +380,15 @@ function attachDaily(day) {
 
   CURRENT_DAY = day;
   window.LUNA.currentDay = CURRENT_DAY;
+  window.CURRENT_DAY = CURRENT_DAY;
 
   if (dailyRef) off(dailyRef);
-
   dailyRef = ref(db, `${ORO_DAILY_BASE}/${day}`);
+
   onValue(dailyRef, s2 => {
     oroscopo2026 = s2.val() || {};
     window.LUNA.oroscopo = oroscopo2026;
-  });
-}
-
-// ==========================
-// ✅ ROUND STATE (NO REPEAT + RESET 12/12)
-// ==========================
-function defaultRoundState(){
-  return { used: Array(SIGNS.length).fill(false), pickedCount: 0, updatedAt: Date.now() };
-}
-function safeUsed(v){
-  if (Array.isArray(v) && v.length === SIGNS.length) return v.map(Boolean);
-  return Array(SIGNS.length).fill(false);
-}
-function countUsed(arr){ return arr.reduce((a,b)=>a+(b?1:0),0); }
-
-let roundState = defaultRoundState();
-
-function renderPickStatus(){
-  const el = document.getElementById("pickStatus");
-  if (!el) return;
-  el.textContent = `scelti ${roundState.pickedCount}/${SIGNS.length}`;
-}
-
-function markCardsUsed(){
-  if (!cards || !cards.length) return;
-  roundState.used.forEach((u,i)=>{
-    if (!cards[i]) return;
-    cards[i].classList.toggle("used", !!u);
-  });
-}
-
-function listenRoundState(){
-  onValue(ref(db, ROUND_PATH), (snap)=>{
-    if (!snap.exists()){
-      roundState = defaultRoundState();
-      renderPickStatus();
-      markCardsUsed();
-      return;
-    }
-    const v = snap.val() || {};
-    const used = safeUsed(v.used);
-    roundState = {
-      used,
-      pickedCount: Number(v.pickedCount || countUsed(used)),
-      updatedAt: Number(v.updatedAt || Date.now())
-    };
-    renderPickStatus();
-    markCardsUsed();
+    window.OROSCOPO_2026 = oroscopo2026;
   });
 }
 
@@ -331,14 +402,19 @@ function initUI() {
   const loginBtn   = document.getElementById("loginBtn");
   const loginInput = document.getElementById("loginName");
 
+  if (!loginModal || !app || !controls || !loginBtn || !loginInput) return;
+
   loginBtn.addEventListener("click", () => doLogin(loginInput.value.trim()));
-  loginInput.addEventListener("keydown", (e) => { if (e.key === "Enter") doLogin(loginInput.value.trim()); });
+  loginInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") doLogin(loginInput.value.trim());
+  });
 
   const saved = sessionStorage.getItem("lunaUser");
-  if (saved) setTimeout(() => doLogin(saved), 600);
+  if (saved) setTimeout(() => doLogin(saved), 3200);
 
   function doLogin(name) {
     if (!name || name.length < 2) return;
+    if (STATE !== "BOOT" && window.LUNA.user === name) return;
 
     window.LUNA.user = name;
     sessionStorage.setItem("lunaUser", name);
@@ -348,17 +424,24 @@ function initUI() {
     controls.classList.remove("hidden");
 
     STATE = "IDLE";
+    lunaBot(`Benvenuto ${name}. La ruota attende.`);
   }
 }
 
 // ==========================
-// 🎴 CARDS
+// 🖼️ CARDS
 // ==========================
-function preloadImages() { SIGNS.forEach(s => { const img = new Image(); img.src = safeImg(s.img); }); }
+function preloadImages() {
+  SIGNS.forEach(s => {
+    const img = new Image();
+    img.src = safeImg(s.img);
+  });
+}
 
 function initCards() {
   const left  = document.getElementById("cardsLeft");
   const right = document.getElementById("cardsRight");
+  if (!left || !right) return;
 
   cards = [];
   left.innerHTML = "";
@@ -368,58 +451,101 @@ function initCards() {
     const c = document.createElement("div");
     c.className = "card";
     c.style.backgroundImage = `url("${safeImg(s.img)}")`;
+    c.dataset.idx = String(i);
     (i < 6 ? left : right).appendChild(c);
     cards.push(c);
   });
 }
 
 // ==========================
-// 🌪️ SPIN multiplayer (winner deciso qui)
+// 🌪️ RUOTA — senza ripetizioni (TRANSACTION)
 // ==========================
-function initSpin() {
+function defaultSpinState() {
+  return {
+    round: 1,
+    remaining: Array.from({length: SIGNS.length}, (_, i) => i),
+    picked: [],
+    lastWinner: null,
+    lastAt: 0
+  };
+}
+
+function setRoundInfo(state) {
+  const el = document.getElementById("roundInfo");
+  if (!el) return;
+  const r = state?.round ?? 1;
+  const done = (state?.picked?.length ?? 0);
+  el.textContent = `ROUND ${r} — scelti ${done}/12`;
+}
+
+function markPicked(state) {
+  const picked = new Set(state?.picked || []);
+  cards.forEach((c, idx) => {
+    c.classList.toggle("picked", picked.has(idx));
+  });
+}
+
+async function ensureSpinStateExists() {
+  const rSpin = ref(db, SPIN_STATE_PATH);
+  const snap = await get(rSpin);
+  if (!snap.exists()) {
+    await set(rSpin, defaultSpinState());
+  }
+}
+
+function initSpinButton() {
   const spinBtn = document.getElementById("spin");
   if (!spinBtn) return;
 
   spinBtn.onclick = async () => {
     if (STATE !== "IDLE") return;
 
-    await runTransaction(ref(db, ROUND_PATH), (cur) => {
-      const st = cur ? {
-        used: safeUsed(cur.used),
-        pickedCount: Number(cur.pickedCount || countUsed(safeUsed(cur.used))),
-        updatedAt: Number(cur.updatedAt || Date.now())
-      } : defaultRoundState();
+    const rSpin = ref(db, SPIN_STATE_PATH);
 
-      // ✅ se 12/12 -> reset totale 0/12
-      if (st.pickedCount >= SIGNS.length) {
-        st.used = Array(SIGNS.length).fill(false);
-        st.pickedCount = 0;
+    await runTransaction(rSpin, (cur) => {
+      const st = cur && typeof cur === "object" ? cur : defaultSpinState();
+      const remaining = Array.isArray(st.remaining) ? st.remaining.slice() : [];
+
+      // se finito -> reset round
+      if (remaining.length === 0) {
+        st.round = (st.round || 1) + 1;
+        st.remaining = Array.from({length: SIGNS.length}, (_, i) => i);
+        st.picked = [];
       }
 
-      const available = [];
-      for (let i = 0; i < SIGNS.length; i++) if (!st.used[i]) available.push(i);
+      const rem = st.remaining.slice();
+      const pickIndex = Math.floor(Math.random() * rem.length);
+      const winner = rem[pickIndex];
 
-      const winner = available[Math.floor(Math.random() * available.length)];
-
-      st.used[winner] = true;
-      st.pickedCount = countUsed(st.used);
-      st.updatedAt = Date.now();
-
-      // trigger animazione su tutti
-      set(ref(db, GAME_PATH), { winner, time: Date.now() });
+      rem.splice(pickIndex, 1);
+      st.remaining = rem;
+      st.picked = Array.isArray(st.picked) ? st.picked.concat([winner]) : [winner];
+      st.lastWinner = winner;
+      st.lastAt = Date.now();
 
       return st;
     });
   };
 }
 
-function listenSpin() {
-  onValue(ref(db, GAME_PATH), snap => {
+function listenSpinState() {
+  const rSpin = ref(db, SPIN_STATE_PATH);
+
+  onValue(rSpin, (snap) => {
     if (!snap.exists()) return;
-    if (ignoreFirstSpin) { ignoreFirstSpin = false; return; }
-    const v = snap.val();
-    if (!v || typeof v.winner !== "number") return;
-    playSpin(v.winner);
+    const st = snap.val();
+    setRoundInfo(st);
+    markPicked(st);
+
+    // evita animazione al primo load
+    if (ignoreFirstSpin) {
+      ignoreFirstSpin = false;
+      return;
+    }
+
+    const w = st?.lastWinner;
+    if (typeof w !== "number") return;
+    playSpin(w);
   });
 }
 
@@ -434,10 +560,11 @@ async function playSpin(w) {
 
   STATE = "SPINNING";
   const wheel = document.getElementById("wheel");
+  if (!wheel) return;
 
   wheel.className = "wheel boost";
-  cards.forEach(c => (c.className = "card" + (c.classList.contains("used") ? " used" : "")));
-  await sleep(650);
+  cards.forEach(c => c.classList.remove("winner","doomed","active"));
+  await sleep(520);
 
   wheel.className = "wheel command";
 
@@ -446,7 +573,7 @@ async function playSpin(w) {
     cards.forEach(c => c.classList.remove("active"));
     cards[cur].classList.add("active");
     cur = (cur + 1) % cards.length;
-    await sleep(28 + i * 4);
+    await sleep(24 + i * 4);
   }
 
   const win = cards[w];
@@ -456,11 +583,14 @@ async function playSpin(w) {
   wheel.className = "wheel";
   STATE = "RESULT";
 
-  setTimeout(() => openModal(SIGNS[w]), 400);
+  lunaBot(`Il destino ha parlato: ${SIGNS[w].name}`);
+  setTimeout(() => openModal(SIGNS[w]), 520);
 }
 
 function idlePulse() {
   const wheel = document.getElementById("wheel");
+  if (!wheel) return;
+
   setInterval(() => {
     if (STATE === "IDLE") wheel.classList.add("idle");
     else wheel.classList.remove("idle");
@@ -468,17 +598,41 @@ function idlePulse() {
 }
 
 // ==========================
+// 🌙 INTRO
+// ==========================
+function playIntro() {
+  const curtain = document.getElementById("cosmicCurtain");
+  const login   = document.getElementById("loginModal");
+  if (!curtain || !login) return;
+
+  document.body.classList.add("lock");
+  login.classList.add("hidden");
+
+  setTimeout(() => curtain.classList.add("fadeout"), 2200);
+
+  setTimeout(() => {
+    curtain.style.display = "none";
+    login.classList.remove("hidden");
+    document.body.classList.remove("lock");
+  }, 3000);
+}
+
+// ==========================
 // 🌌 MODALE OROSCOPO
 // ==========================
 function initModal() {
-  document.getElementById("closeModal")?.addEventListener("click", closeModal);
-  document.getElementById("modalBackdrop")?.addEventListener("click", closeModal);
+  const closeBtn = document.getElementById("closeModal");
+  const back     = document.getElementById("modalBackdrop");
+  if (closeBtn) closeBtn.onclick = closeModal;
+  if (back) back.onclick = closeModal;
 }
 
 function openModal(data) {
   STATE = "MODAL";
+
   document.getElementById("modal")?.classList.remove("hidden");
   document.getElementById("modalBackdrop")?.classList.remove("hidden");
+  document.getElementById("chatLuna")?.classList.add("disabled");
 
   document.getElementById("modalTitle").innerText = data.name;
   document.getElementById("modalLore").innerText  = data.lore;
@@ -488,49 +642,24 @@ function openModal(data) {
   document.getElementById("oroscopo2026").innerText = formatHoroscopeForOutput(data.name, v);
 
   const image = document.getElementById("fullscreenImage");
-  if (image) image.style.backgroundImage = `url("${safeImg(data.img)}")`;
+  if (image) {
+    image.classList.remove("zoom");
+    image.style.backgroundImage = `url("${safeImg(data.img)}")`;
+    void image.offsetWidth;
+    image.classList.add("zoom");
+  }
 }
 
 function closeModal() {
   document.getElementById("modal")?.classList.add("hidden");
   document.getElementById("modalBackdrop")?.classList.add("hidden");
+  document.getElementById("chatLuna")?.classList.remove("disabled");
   STATE = "IDLE";
 }
 
 // ==========================
-// 🧠 YouTube helpers
+// 🧾 BACHECA — POST OROSCOPO
 // ==========================
-function extractYouTubeId(input){
-  const s = String(input || "").trim();
-  if (!s) return "";
-  if (/^[a-zA-Z0-9_-]{6,20}$/.test(s)) return s;
-
-  // youtu.be/ID
-  let m = s.match(/youtu\.be\/([a-zA-Z0-9_-]{6,20})/);
-  if (m) return m[1];
-
-  // youtube.com/watch?v=ID
-  m = s.match(/[?&]v=([a-zA-Z0-9_-]{6,20})/);
-  if (m) return m[1];
-
-  // youtube.com/embed/ID
-  m = s.match(/embed\/([a-zA-Z0-9_-]{6,20})/);
-  if (m) return m[1];
-
-  return "";
-}
-
-function isHttpUrl(s){ return /^https?:\/\//i.test(String(s||"").trim()); }
-
-// ==========================
-// 🧾 POST: OROSCOPO (opzionale)
-// ==========================
-function getBaseLink() {
-  const { origin, pathname } = window.location;
-  const baseDir = pathname.replace(/\/[^/]*$/, "/");
-  return origin + baseDir + "index.html";
-}
-
 async function postOroscopoToBacheca(signName) {
   if (!isAdmin) return alert("Solo ADMIN puo postare in bacheca.");
   if (!CURRENT_DAY) return alert("CURRENT_DAY non disponibile.");
@@ -541,237 +670,300 @@ async function postOroscopoToBacheca(signName) {
 
   const v = (oroscopo2026 && oroscopo2026[signName]) ? oroscopo2026[signName] : null;
   const formatted = formatHoroscopeForOutput(signName, v);
+
   const link = getBaseLink() + `?day=${encodeURIComponent(day)}&sign=${encodeURIComponent(signName)}`;
 
   const discordText = sanitizePlainASCII(
-    `Luna Vallyy - ${oracle}\nGiorno: ${day}\nPianetini: ${signName}\n\n${formatted}\n\nLink: ${link}`
+    `Luna Vallyy - ${oracle}\n` +
+    `Giorno: ${day}\n` +
+    `Pianetini: ${signName}\n\n` +
+    `${formatted}\n\n` +
+    `Link: ${link}`
   );
 
   const payload = {
     at: Date.now(),
-    author, oracle,
+    author,
+    oracle,
     title: sanitizePlainASCII(`Luna Vallyy - ${oracle}`),
     subtitle: sanitizePlainASCII("Messaggio dal Pianeta Segreto. Pronto anche per Discord."),
     text: discordText,
     link,
     tag: "Pianeta Segreto",
-    mode: "OROSCOPO",
-    image: "",
-    video: "",
-    music: ""
+    mode: "OROSCOPO"
   };
 
   await set(ref(db, BACHECA_LATEST), payload);
-  alert("POST OROSCOPO OK: bacheca aggiornata.");
+  lunaBot(`Bacheca aggiornata (OROSCOPO): ${signName}.`);
+  alert("POST OK: bacheca aggiornata.");
 }
 
 // ==========================
-// 🧾 POST: NEUTRO (indipendente)
+// 🧾 POST NEUTRO — lettura campi
 // ==========================
-function readNeutralForm(){
-  const title = sanitizePlainASCII(document.getElementById("neutralTitle")?.value || "");
-  const body  = sanitizePlainASCII(document.getElementById("neutralBody")?.value  || "");
-  const link  = sanitizePlainASCII(document.getElementById("neutralLink")?.value  || "");
-  const image = String(document.getElementById("neutralImage")?.value || "").trim();
-  const videoRaw = String(document.getElementById("neutralVideo")?.value || "").trim();
-  const musicRaw = String(document.getElementById("neutralMusic")?.value || "").trim();
-  const modeSel = String(document.getElementById("videoMode")?.value || "visible");
+function readNeutralFields(){
+  const title = sanitizePlainASCII(document.getElementById("pnTitle")?.value || "");
+  const body  = sanitizePlainASCII(document.getElementById("pnBody")?.value || "");
+  const link  = normalizeLink(document.getElementById("pnLink")?.value || "");
+  const image = String(document.getElementById("pnImage")?.value || "").trim();
 
-  const video = extractYouTubeId(videoRaw);
-  const music = extractYouTubeId(musicRaw);
+  const videoId = extractYouTubeId(document.getElementById("pnVideo")?.value || "");
+  const musicId = extractYouTubeId(document.getElementById("pnMusic")?.value || "");
 
-  let safeLink = link;
-  if (!safeLink) safeLink = "https://alexcaos75.github.io/oroscopo/";
-  if (safeLink && !isHttpUrl(safeLink) && !/^[./]/.test(safeLink)) safeLink = "https://alexcaos75.github.io/oroscopo/";
-
-  // immagine: accetta http/https oppure immagini/...
-  let safeImage = "";
-  if (image && (isHttpUrl(image) || /^immagini\/[a-z0-9_\-./]+$/i.test(image))) safeImage = image;
+  const mode =
+    document.querySelector('input[name="pnVideoMode"]:checked')?.value || "visible";
 
   return {
-    title: title || "Pianeta Segreto",
-    body: body || "Il nostro oracolo ci accompagna.\n\nQuando il cielo tace, ascolta il cuore.",
-    link: safeLink,
-    image: safeImage,
-    video: (modeSel === "visible") ? video : "",
-    music
+    title,
+    body,
+    link,
+    image,
+    videoId,
+    musicId,
+    videoMode: mode // "visible" | "hidden"
   };
 }
 
-function clearNeutralForm(){
-  ["neutralTitle","neutralBody","neutralLink","neutralImage","neutralVideo","neutralMusic"].forEach(id=>{
+function clearNeutralFields(){
+  ["pnTitle","pnBody","pnLink","pnImage","pnVideo","pnMusic"].forEach(id=>{
     const el = document.getElementById(id);
     if (el) el.value = "";
   });
+  const radio = document.querySelector('input[name="pnVideoMode"][value="visible"]');
+  if (radio) radio.checked = true;
 }
 
-async function postNeutroToBacheca(){
+// ==========================
+// 🧾 POST NEUTRO — pubblica su Firebase
+// ==========================
+async function postNeutralToBacheca() {
   if (!isAdmin) return alert("Solo ADMIN puo postare in bacheca.");
 
   const author = sanitizePlainASCII(window.LUNA.user || "Luna Vallyy");
   const oracle = "Oracolo di Pianeta Segreto";
 
-  const f = readNeutralForm();
+  const { title, body, link, image, videoId, musicId, videoMode } = readNeutralFields();
+
+  const finalTitle = title || "Luna Vallyy - Oracolo di Pianeta Segreto";
+  const finalBody  = body  || "Il nostro oracolo ci accompagna.\n\nQuando il cielo tace, ascolta il cuore.";
+  const finalLink  = link  || "https://alexcaos75.github.io/oroscopo/";
 
   const discordText = sanitizePlainASCII(
-    `${f.title}\n${oracle}\n\n${f.body}\n\nLink: ${f.link}`
+    `${finalTitle}\n${oracle}\n\n${finalBody}\n\nLink: ${finalLink}`
   );
 
   const payload = {
     at: Date.now(),
-    author, oracle,
-    title: sanitizePlainASCII(f.title),
-    subtitle: sanitizePlainASCII("Messaggio neutro dal Pianeta Segreto. Pronto anche per Discord."),
+    author,
+    oracle,
+    title: sanitizePlainASCII(finalTitle),
+    subtitle: sanitizePlainASCII("Post neutro dal Pianeta Segreto. Pronto anche per Discord."),
     text: discordText,
-    link: f.link,
-    image: f.image || "",
-    video: f.video || "",
-    music: f.music || "",
+    link: finalLink,
+    image: image || "",
+    video: videoMode === "visible" ? (videoId || "") : "",
+    music: videoMode === "hidden" ? ((musicId || videoId) || "") : "",
+    videoMode,
     tag: "Pianeta Segreto",
     mode: "NEUTRO"
   };
 
   await set(ref(db, BACHECA_LATEST), payload);
-  clearNeutralForm();
+  clearNeutralFields();
+
+  lunaBot("Bacheca aggiornata: POST NEUTRO pubblicato.");
   alert("POST NEUTRO OK: bacheca aggiornata.");
 }
 
 // ==========================
-// 📋 COPIA DISCORD (solo oroscopo selezionato)
+// 🧾 COPIA POST — genera HTML incollabile
+// ==========================
+function escapeHtml(s){
+  return String(s||"")
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
+
+function buildPublishablePostHTML({ title, body, link, image, videoId, musicId, videoMode }) {
+  const t = title || "Luna Vallyy - Oracolo di Pianeta Segreto";
+  const b = body  || "Il nostro oracolo ci accompagna.\n\nQuando il cielo tace, ascolta il cuore.";
+  const l = link  || "https://alexcaos75.github.io/oroscopo/";
+
+  const hasImg = !!(image && String(image).trim());
+  const imgSrc = hasImg ? String(image).trim() : "";
+
+  const vid = (videoMode === "visible") ? (videoId || "") : "";
+  const mus = (videoMode === "hidden") ? (musicId || videoId || "") : "";
+
+  // HTML (single block) — bello e “universale”
+  return `
+<div style="
+  max-width:920px;
+  margin:18px auto;
+  border-radius:26px;
+  overflow:hidden;
+  border:1px solid rgba(255,255,255,.14);
+  background:linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.06));
+  box-shadow:0 26px 90px rgba(0,0,0,.55);
+">
+  <div style="
+    padding:18px 18px 14px;
+    background:
+      radial-gradient(900px 420px at 10% 0%, rgba(180,80,255,.25), transparent 60%),
+      radial-gradient(900px 420px at 95% 20%, rgba(40,230,255,.20), transparent 60%),
+      radial-gradient(900px 420px at 50% 110%, rgba(255,80,210,.14), transparent 60%),
+      rgba(0,0,0,.22);
+  ">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div style="
+        width:46px;height:46px;border-radius:16px;
+        background:linear-gradient(135deg, rgba(180,80,255,.90), rgba(40,230,255,.40));
+        border:1px solid rgba(255,255,255,.18);
+        display:grid;place-items:center;
+        font-weight:900;letter-spacing:.6px;
+        color:white;
+        box-shadow:0 18px 60px rgba(110,120,255,.22);
+      ">PS</div>
+      <div style="min-width:0;">
+        <div style="font-weight:950;font-size:18px;letter-spacing:.2px;color:rgba(255,255,255,.95);">
+          ${escapeHtml(t)}
+        </div>
+        <div style="margin-top:6px;font-size:13px;opacity:.84;color:rgba(255,255,255,.86);line-height:1.3;">
+          Il Pianeta Segreto sussurra: ascolta con calma e scegli con eleganza.
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:14px;white-space:pre-wrap;line-height:1.55;font-family:ui-monospace, Menlo, Consolas, monospace;
+      font-size:13.6px;color:rgba(255,255,255,.92);
+      background:rgba(0,0,0,.22);
+      border:1px solid rgba(255,255,255,.14);
+      border-radius:18px;
+      padding:14px;
+    ">${escapeHtml(b)}</div>
+
+    <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+      <a href="${escapeHtml(l)}" target="_blank" rel="noopener"
+        style="
+          display:inline-flex;align-items:center;gap:10px;
+          padding:12px 16px;border-radius:999px;
+          text-decoration:none;
+          font-weight:950;font-size:13px;letter-spacing:.35px;
+          color:white;
+          background:linear-gradient(135deg, rgba(180,80,255,.74), rgba(40,230,255,.30));
+          border:1px solid rgba(255,255,255,.18);
+          box-shadow:0 18px 56px rgba(80,120,255,.22);
+        ">
+        APRI ORACOLO
+      </a>
+
+      ${mus ? `
+      <button onclick="psPlayMusic()" style="
+        padding:12px 16px;border-radius:999px;
+        font-weight:950;font-size:13px;letter-spacing:.35px;
+        color:white;cursor:pointer;
+        background:linear-gradient(135deg, rgba(255,120,220,.40), rgba(120,120,255,.38));
+        border:1px solid rgba(255,255,255,.18);
+        box-shadow:0 18px 56px rgba(0,0,0,.35);
+      ">ASCOLTA</button>
+
+      <button onclick="psStopMusic()" style="
+        padding:12px 16px;border-radius:999px;
+        font-weight:950;font-size:13px;letter-spacing:.35px;
+        color:white;cursor:pointer;
+        background:rgba(255,255,255,.10);
+        border:1px solid rgba(255,255,255,.18);
+      ">STOP</button>
+
+      <iframe id="psMusicFrame" src="about:blank"
+        style="width:0;height:0;border:0;position:absolute;left:-9999px;top:-9999px;"
+        allow="autoplay"></iframe>
+
+      <script>
+        function psPlayMusic(){
+          // autoplay audio: parte SOLO dopo click (permesso dai browser)
+          document.getElementById('psMusicFrame').src =
+            "https://www.youtube.com/embed/${mus}?autoplay=1&loop=1&playlist=${mus}&controls=0&rel=0&modestbranding=1";
+        }
+        function psStopMusic(){
+          document.getElementById('psMusicFrame').src = "about:blank";
+        }
+      </script>
+      ` : ``}
+    </div>
+  </div>
+
+  ${hasImg ? `
+  <div style="background:rgba(0,0,0,.35); border-top:1px solid rgba(255,255,255,.10);">
+    <img src="${escapeHtml(imgSrc)}" alt="Pianeta Segreto"
+      style="width:100%;height:auto;display:block;object-fit:contain;max-height:620px;background:rgba(0,0,0,.35);" />
+  </div>
+  ` : ``}
+
+  ${vid ? `
+  <div style="padding:16px;background:rgba(0,0,0,.25);border-top:1px solid rgba(255,255,255,.10);">
+    <iframe
+      src="https://www.youtube.com/embed/${vid}?rel=0&modestbranding=1"
+      style="width:100%;aspect-ratio:16/9;border-radius:18px;border:1px solid rgba(255,255,255,.14);"
+      allowfullscreen></iframe>
+  </div>
+  ` : ``}
+
+</div>
+`.trim();
+}
+
+async function copyPostHTML(){
+  const { title, body, link, image, videoId, musicId, videoMode } = readNeutralFields();
+  const html = buildPublishablePostHTML({ title, body, link, image, videoId, musicId, videoMode });
+
+  try{
+    await navigator.clipboard.writeText(html);
+    alert("COPIA POST OK: HTML copiato (incollalo in bacheca).");
+  }catch{
+    const ta = document.createElement("textarea");
+    ta.value = html;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand("copy");
+    document.body.removeChild(ta);
+    alert("COPIA POST OK (fallback).");
+  }
+}
+
+// ==========================
+// 📋 COPIA DISCORD (per segno selezionato)
 // ==========================
 async function copyDiscordMessage(signName) {
   if (!CURRENT_DAY) return alert("CURRENT_DAY non disponibile.");
 
   const day = CURRENT_DAY;
   const oracle = "Oracolo di Pianeta Segreto";
-
   const v = (oroscopo2026 && oroscopo2026[signName]) ? oroscopo2026[signName] : null;
   const formatted = formatHoroscopeForOutput(signName, v);
+
   const link = getBaseLink() + `?day=${encodeURIComponent(day)}&sign=${encodeURIComponent(signName)}`;
+  const msg = sanitizePlainASCII(`Luna Vallyy - ${oracle}\nGiorno: ${day}\nPianetini: ${signName}\n\n${formatted}\n\nLink: ${link}`);
 
-  const msg = sanitizePlainASCII(
-    `Luna Vallyy - ${oracle}\nGiorno: ${day}\nPianetini: ${signName}\n\n${formatted}\n\nLink: ${link}`
-  );
-
-  await copyToClipboard(msg);
-  alert("Copiato (Discord pronto).");
-}
-
-// ==========================
-// 🧩 COPIA POST (HTML pronto da incollare)
-// ==========================
-function buildEmbedsHTML({title, body, link, image, video, music}){
-  // Video visibile
-  const videoHTML = video ? `
-    <div style="margin-top:14px;border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,.16);box-shadow:0 12px 42px rgba(0,0,0,.35);">
-      <iframe
-        src="https://www.youtube.com/embed/${video}?rel=0"
-        style="width:100%;aspect-ratio:16/9;border:0;display:block;"
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-        allowfullscreen></iframe>
-    </div>` : "";
-
-  // Musica invisibile con tasti (autoplay con audio richiede click utente: per questo c’è ASCOLTA)
-  const musicHTML = music ? `
-    <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;">
-      <button onclick="(function(){
-        var w=document.getElementById('ps-music-wrap');
-        if(!w) return;
-        if(w.dataset.on==='1') return;
-        w.dataset.on='1';
-        w.innerHTML='<iframe src=\\'https://www.youtube.com/embed/${music}?autoplay=1&loop=1&playlist=${music}&rel=0\\' allow=\\'autoplay; encrypted-media\\' style=\\'width:1px;height:1px;opacity:0;position:absolute;left:-9999px;top:-9999px;border:0\\'></iframe>';
-      })()"
-      style="padding:12px 16px;border-radius:999px;border:0;cursor:pointer;font-weight:900;letter-spacing:.6px;">
-        ASCOLTA
-      </button>
-
-      <button onclick="(function(){
-        var w=document.getElementById('ps-music-wrap');
-        if(!w) return;
-        w.dataset.on='0';
-        w.innerHTML='';
-      })()"
-      style="padding:12px 16px;border-radius:999px;border:0;cursor:pointer;font-weight:900;letter-spacing:.6px;">
-        STOP
-      </button>
-      <div id="ps-music-wrap" data-on="0"></div>
-    </div>` : "";
-
-  const imgHTML = image ? `
-    <div style="margin-top:14px;border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,.16);box-shadow:0 12px 42px rgba(0,0,0,.35);">
-      <img src="${image}" alt="Pianeta Segreto" style="display:block;width:100%;height:auto;">
-    </div>` : "";
-
-  const safeBody = body.replace(/</g,"&lt;").replace(/>/g,"&gt;");
-
-  return `
-<div style="
-  max-width:980px;margin:0 auto;
-  padding:18px;
-  color:#fff;
-  font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
-  background: radial-gradient(900px 600px at 20% 10%, rgba(170,80,255,.22), transparent 55%),
-              radial-gradient(900px 600px at 80% 20%, rgba(40,220,255,.16), transparent 55%),
-              linear-gradient(180deg,#090a24,#050612);
-  border-radius:22px;
-  border:1px solid rgba(255,255,255,.14);
-  box-shadow:0 24px 90px rgba(0,0,0,.55);
-">
-  <div style="display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;">
-    <div style="font-weight:1000;letter-spacing:.3px;font-size:20px;">${title}</div>
-    <a href="${link}" target="_blank" rel="noopener"
-      style="display:inline-flex;align-items:center;gap:10px;text-decoration:none;
-      padding:12px 16px;border-radius:999px;
-      color:#0b1020;font-weight:1000;letter-spacing:.6px;
-      background:linear-gradient(135deg, rgba(180,80,255,.95), rgba(40,230,255,.75));
-      box-shadow:0 18px 55px rgba(120,120,255,.25);">
-      APRI LINK
-    </a>
-  </div>
-
-  <div style="margin-top:12px;opacity:.82;line-height:1.5;white-space:pre-wrap;font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;">
-${safeBody}
-  </div>
-
-  ${imgHTML}
-  ${videoHTML}
-  ${musicHTML}
-</div>`.trim();
-}
-
-async function copyPostHTML(){
-  const f = readNeutralForm();
-  const html = buildEmbedsHTML({
-    title: f.title || "Pianeta Segreto",
-    body: f.body || "",
-    link: f.link || "https://alexcaos75.github.io/oroscopo/",
-    image: f.image || "",
-    video: f.video || "",
-    music: f.music || ""
-  });
-
-  await copyToClipboard(html);
-  alert("COPIA POST OK: codice HTML copiato (incolla in bacheca / post).");
-}
-
-// ==========================
-// 📋 Clipboard helper
-// ==========================
-async function copyToClipboard(text){
-  try{
-    await navigator.clipboard.writeText(text);
-  }catch{
+  try {
+    await navigator.clipboard.writeText(msg);
+    alert("Copiato negli appunti (Discord pronto).");
+  } catch {
     const ta = document.createElement("textarea");
-    ta.value = text;
+    ta.value = msg;
     document.body.appendChild(ta);
     ta.select();
     document.execCommand("copy");
     document.body.removeChild(ta);
+    alert("Copiato negli appunti (fallback).");
   }
 }
 
 // ==========================
-// 🛡️ ADMIN UI
+// 🛡️ ADMIN
 // ==========================
 function initAdmin() {
   const select = document.getElementById("adminSelect");
@@ -780,10 +972,12 @@ function initAdmin() {
   const save   = document.getElementById("saveAdmin");
   const close  = document.getElementById("closeAdmin");
 
-  const postOro = document.getElementById("postOroscopo");
-  const postNeu = document.getElementById("postNeutro");
-  const copyDis = document.getElementById("copyDiscord");
-  const copyPos = document.getElementById("copyPost");
+  const postBtn   = document.getElementById("postBacheca");
+  const postNeut  = document.getElementById("postNeutral");
+  const copyBtn   = document.getElementById("copyDiscord");
+  const copyPost  = document.getElementById("copyPost");
+
+  if (!select || !text || !btn || !save || !close) return;
 
   select.innerHTML = "";
   SIGNS.forEach(s => {
@@ -810,28 +1004,16 @@ function initAdmin() {
     } else {
       await update(ref(db, `${ORO_DAILY_BASE}/${CURRENT_DAY}`), { [select.value]: clean });
     }
-    await update(ref(db, `${ORO_DAILY_BASE}/${CURRENT_DAY}`), { updatedAt: Date.now() });
 
+    await update(ref(db, `${ORO_DAILY_BASE}/${CURRENT_DAY}`), { updatedAt: Date.now() });
+    lunaBot(`Oroscopo aggiornato: ${select.value}.`);
     alert("Salvato.");
   };
 
-  postOro.onclick = async () => {
-    if (!isAdmin) return alert("Prima attiva ADMIN.");
-    await postOroscopoToBacheca(select.value);
-  };
-
-  postNeu.onclick = async () => {
-    if (!isAdmin) return alert("Prima attiva ADMIN.");
-    await postNeutroToBacheca();
-  };
-
-  copyDis.onclick = async () => {
-    await copyDiscordMessage(select.value);
-  };
-
-  copyPos.onclick = async () => {
-    await copyPostHTML();
-  };
+  if (postBtn) postBtn.onclick = async () => { if (!isAdmin) return alert("Prima attiva ADMIN."); await postOroscopoToBacheca(select.value); };
+  if (postNeut) postNeut.onclick = async () => { if (!isAdmin) return alert("Prima attiva ADMIN."); await postNeutralToBacheca(); };
+  if (copyBtn) copyBtn.onclick = async () => { await copyDiscordMessage(select.value); };
+  if (copyPost) copyPost.onclick = async () => { await copyPostHTML(); };
 
   btn.onclick = () => {
     if (!isAdmin) {
@@ -839,6 +1021,7 @@ function initAdmin() {
       if (pass !== ADMIN_PASSWORD) return;
       isAdmin = true;
       window.LUNA.isAdmin = true;
+      lunaBot(`ADMIN attivo: ${window.LUNA.user || "Luna"}.`);
     }
     document.getElementById("adminModal")?.classList.remove("hidden");
     select.dispatchEvent(new Event("change"));
@@ -848,36 +1031,43 @@ function initAdmin() {
 }
 
 // ==========================
+// 🤖 LUNA BOT
+// ==========================
+function lunaBot(text) {
+  const now = Date.now();
+  if (now - window.LUNA.lastBotMessage < 2200) return;
+  window.LUNA.lastBotMessage = now;
+  set(ref(db, `${CHAT_PATH}/${now}`), { user: "Luna", text: sanitizePlainASCII(text) });
+}
+
+// ==========================
 // ✅ INIT
 // ==========================
 window.addEventListener("load", init);
 
-function init() {
-  if (DEBUG) console.log("### RUOTA LUNARE 2026 — WIN ###");
+async function init() {
+  if (DEBUG) console.log("### LUNA SCRIPT CAPOLAVORO ###");
 
-  // intro
-  const curtain = document.getElementById("cosmicCurtain");
-  setTimeout(()=>curtain?.classList.add("fadeout"), 1200);
-  setTimeout(()=>curtain && (curtain.style.display="none"), 2000);
+  playIntro();
 
   ensureDailyOroscopoUpToDate().catch(()=>{});
   scheduleMidnightResync();
 
   initOroscopoRealtime();
-
   initUI();
+
   initCards();
   preloadImages();
 
-  listenRoundState();     // ✅ mostra scelti 0/12 e “SCELTO”
-  initSpin();             // ✅ no repeat + reset 12/12
-  listenSpin();
+  await ensureSpinStateExists();
+  initSpinButton();
+  listenSpinState();
 
   initModal();
   initAdmin();
   idlePulse();
 
-  // export debug
-  window.LUNA.postNeutroToBacheca = postNeutroToBacheca;
-  window.LUNA.copyPostHTML = copyPostHTML;
+  // exports utili
+  window.LUNA.migrateTodayToRichFormat = migrateTodayToRichFormat;
+  window.LUNA.ensureDailyOroscopoUpToDate = ensureDailyOroscopoUpToDate;
 }
