@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#00060d" />
   <title>Ruota Lunare – Sentenza</title>
-  <link rel="stylesheet" href="style.css?v=20251228-win" />
+  <link rel="stylesheet" href="style.css?v=20251228-capolavoro" />
 </head>
 
 <body>
@@ -44,6 +44,8 @@
         <button id="spin" type="button" aria-label="Avvia la ruota">SCEGLI</button>
         <button id="adminBtn" type="button" aria-label="Area amministratore">ADMIN</button>
       </div>
+
+      <div id="roundInfo" style="margin-top:10px; font-weight:800; opacity:.9; letter-spacing:.4px;"></div>
     </section>
 
     <section class="cards-zone" aria-label="Carte zodiacali destra">
@@ -71,57 +73,76 @@
     </div>
   </div>
 
-  <!-- MODALE ADMIN -->
+  <!-- MODALE ADMIN (RIORDINATO + POST NEUTRO + COPIA POST) -->
   <div id="adminModal" class="modal hidden" aria-hidden="true">
     <div class="admin-panel" role="dialog" aria-modal="true">
+
       <h2>Editor Oroscopo 2026</h2>
 
+      <!-- OR0SCOPO EDITOR -->
       <label class="sr-only" for="adminSelect">Segno</label>
       <select id="adminSelect"></select>
 
       <label class="sr-only" for="adminText">Testo oroscopo</label>
       <textarea id="adminText" placeholder="Scrivi qui l'oroscopo..." rows="6"></textarea>
 
-      <!-- ✅ POST NEUTRO (13° evento separato) -->
-      <div class="admin-spot" style="margin-top:12px; display:grid; gap:8px;">
-        <input id="spotTitle" type="text"
+      <hr style="border:0;height:1px;background:rgba(255,255,255,.12);margin:14px 0;" />
+
+      <!-- POST NEUTRO (INDIPENDENTE) -->
+      <div style="display:grid; gap:10px;">
+        <div style="font-weight:900; letter-spacing:.4px; opacity:.95;">POST NEUTRO (indipendente)</div>
+
+        <input id="pnTitle" type="text"
           placeholder="POST NEUTRO — Titolo (opzionale)"
-          style="width:100%; padding:10px 12px; border-radius:12px; border:1px solid rgba(255,255,255,.15); background:rgba(0,0,0,.25); color:#fff;" />
+          style="width:100%; padding:12px 14px; border-radius:14px; border:1px solid rgba(255,255,255,.14); background:rgba(0,0,0,.24); color:#fff;" />
 
-        <textarea id="spotBody" rows="4"
+        <textarea id="pnBody" rows="4"
           placeholder="POST NEUTRO — Testo (opzionale)"
-          style="width:100%; padding:10px 12px; border-radius:12px; border:1px solid rgba(255,255,255,.15); background:rgba(0,0,0,.25); color:#fff; resize:vertical;"></textarea>
+          style="width:100%; padding:12px 14px; border-radius:14px; border:1px solid rgba(255,255,255,.14); background:rgba(0,0,0,.24); color:#fff;"></textarea>
 
-        <input id="spotLink" type="text"
+        <input id="pnLink" type="text"
           placeholder="POST NEUTRO — Link (opzionale) es: https://alexcaos75.github.io/oroscopo/"
-          style="width:100%; padding:10px 12px; border-radius:12px; border:1px solid rgba(255,255,255,.15); background:rgba(0,0,0,.25); color:#fff;" />
+          style="width:100%; padding:12px 14px; border-radius:14px; border:1px solid rgba(255,255,255,.14); background:rgba(0,0,0,.24); color:#fff;" />
 
-        <input id="spotImage" type="text"
+        <input id="pnImage" type="text"
           placeholder="POST NEUTRO — Immagine/GIF (opzionale) es: immagini/spot1.gif oppure https://..."
-          style="width:100%; padding:10px 12px; border-radius:12px; border:1px solid rgba(255,255,255,.15); background:rgba(0,0,0,.25); color:#fff;" />
+          style="width:100%; padding:12px 14px; border-radius:14px; border:1px solid rgba(255,255,255,.14); background:rgba(0,0,0,.24); color:#fff;" />
 
-        <input id="spotVideo" type="text"
-          placeholder="POST NEUTRO — Video YouTube ID (opzionale) es: dQw4w9WgXcQ"
-          style="width:100%; padding:10px 12px; border-radius:12px; border:1px solid rgba(255,255,255,.15); background:rgba(0,0,0,.25); color:#fff;" />
+        <input id="pnVideo" type="text"
+          placeholder="POST NEUTRO — Video YouTube (opzionale) ID o link"
+          style="width:100%; padding:12px 14px; border-radius:14px; border:1px solid rgba(255,255,255,.14); background:rgba(0,0,0,.24); color:#fff;" />
 
-        <input id="spotMusic" type="text"
-          placeholder="POST NEUTRO — Musica YouTube ID (opzionale) ASCOLTA/STOP invisibile + loop"
-          style="width:100%; padding:10px 12px; border-radius:12px; border:1px solid rgba(255,255,255,.15); background:rgba(0,0,0,.25); color:#fff;" />
+        <input id="pnMusic" type="text"
+          placeholder="POST NEUTRO — Musica YouTube (opzionale) ID o link (ASCOLTA/STOP invisibile + loop)"
+          style="width:100%; padding:12px 14px; border-radius:14px; border:1px solid rgba(255,255,255,.14); background:rgba(0,0,0,.24); color:#fff;" />
+
+        <!-- scelta video -->
+        <div style="display:flex; gap:16px; align-items:center; font-size:13px; opacity:.95;">
+          <label style="display:flex; gap:8px; align-items:center; cursor:pointer; font-weight:800;">
+            <input type="radio" name="pnVideoMode" value="visible" checked />
+            Video visibile
+          </label>
+          <label style="display:flex; gap:8px; align-items:center; cursor:pointer; font-weight:800;">
+            <input type="radio" name="pnVideoMode" value="hidden" />
+            Solo musica (invisibile)
+          </label>
+        </div>
       </div>
 
-      <div class="admin-actions">
+      <div class="admin-actions" style="margin-top:14px;">
         <button id="saveAdmin" type="button">SALVA</button>
         <button id="postBacheca" type="button">POST OROSCOPO</button>
-        <button id="postSpot" type="button">POST NEUTRO</button>
+        <button id="postNeutral" type="button">POST NEUTRO</button>
         <button id="copyDiscord" type="button">COPIA DISCORD</button>
-        <button id="copySpot" type="button">COPIA POST</button>
+        <button id="copyPost" type="button">COPIA POST</button>
         <button id="closeAdmin" type="button">CHIUDI</button>
       </div>
 
-      <div class="admin-links" style="margin-top:10px; font-size:13px; opacity:.9;">
+      <div class="admin-links" style="margin-top:10px; font-size:13px; opacity:.95;">
         Bacheca Pianeta Segreto:
         <a href="./bacheca.html" target="_blank" rel="noopener">apri</a>
       </div>
+
     </div>
   </div>
 
@@ -143,7 +164,7 @@
     </div>
   </div>
 
-  <script type="module" src="script.js?v=20251228-win"></script>
-  <script type="module" src="chat-luna.js?v=20251228-win"></script>
+  <script type="module" src="script.js?v=20251228-capolavoro"></script>
+  <script type="module" src="chat-luna.js?v=20251228-capolavoro"></script>
 </body>
 </html>
