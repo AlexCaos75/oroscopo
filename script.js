@@ -8,13 +8,16 @@
 // ✅ auto daily init + lock globale (1 volta al giorno)
 // ✅ Oroscopo ricco compatibile
 // ✅ POST bacheca: OROSCOPO + POST NEUTRO (indipendente)
-// ✅ COPIA POST: genera HTML incollabile (immagine/gif COVER + video o musica invisibile)
-// ✅ INPUT: accetta LINK oppure CODICE INCORPORAMENTO (iframe) e ricava ID automaticamente
-// ✅ Musica: usa <div style="display:block; visibility:hidden"> con iframe (più compatibile) + allow autoplay
+// ✅ COPIA POST: genera HTML incollabile (GIF cover + video o musica invisibile)
+// ✅ Musica: trucco “enablejsapi + postMessage” (tasti funzionano come il tuo esempio)
+// ✅ Limite bacheca 5000: auto-minify + fallback template se troppo lungo
 // ==========================
 
 const DEBUG = true;
 
+// ==========================
+// 🔥 Firebase (Module)
+// ==========================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
 import {
   getDatabase,
@@ -44,7 +47,7 @@ const appFB = initializeApp(firebaseConfig);
 const db = getDatabase(appFB);
 
 // ==========================
-// 🌐 GLOBAL
+// 🌐 GLOBAL EXPORTS
 // ==========================
 window.LUNA = window.LUNA || {};
 window.LUNA.db = db;
@@ -58,19 +61,17 @@ window.CURRENT_DAY = null;
 window.OROSCOPO_2026 = null;
 
 // ==========================
-// 📡 PATH
+// 📡 PATHS
 // ==========================
 const CHAT_PATH        = "ruota-lunare/chat";
 const ORO_CURRENT_PATH = "ruota-lunare/oroscopiCurrent";
 const ORO_CURRENT_STR  = "ruota-lunare/oroscopiCurrentDate";
 const ORO_DAILY_BASE   = "ruota-lunare/oroscopiDaily";
 const BACHECA_LATEST   = "ruota-lunare/bacheca/latest";
-
-// 🔥 RUOTA (senza ripetizioni) — stato unico
 const SPIN_STATE_PATH  = "ruota-lunare/spinState";
 
 // ==========================
-// 🧠 STATO
+// 🧠 STATE
 // ==========================
 let STATE = "BOOT";
 let isAdmin = false;
@@ -79,18 +80,18 @@ const ADMIN_PASSWORD = "oracolo2026";
 let CURRENT_DAY = null;
 
 const SIGNS = [
-  { name:"Ariete",     img:"p01.png", lore:"Inizio, energia", hint:"Coraggio" },
-  { name:"Toro",       img:"p02.png", lore:"Stabilita", hint:"Determinazione" },
-  { name:"Gemelli",    img:"p03.png", lore:"Comunicazione", hint:"Flessibilita" },
-  { name:"Cancro",     img:"p04.png", lore:"Emozione", hint:"Cura" },
-  { name:"Leone",      img:"p05.png", lore:"Leadership", hint:"Potere" },
-  { name:"Vergine",    img:"p06.png", lore:"Precisione", hint:"Ordine" },
-  { name:"Bilancia",   img:"p07.png", lore:"Equilibrio", hint:"Giustizia" },
-  { name:"Scorpione",  img:"p08.png", lore:"Mistero", hint:"Trasformazione" },
+  { name:"Ariete", img:"p01.png", lore:"Inizio, energia", hint:"Coraggio" },
+  { name:"Toro", img:"p02.png", lore:"Stabilita", hint:"Determinazione" },
+  { name:"Gemelli", img:"p03.png", lore:"Comunicazione", hint:"Flessibilita" },
+  { name:"Cancro", img:"p04.png", lore:"Emozione", hint:"Cura" },
+  { name:"Leone", img:"p05.png", lore:"Leadership", hint:"Potere" },
+  { name:"Vergine", img:"p06.png", lore:"Precisione", hint:"Ordine" },
+  { name:"Bilancia", img:"p07.png", lore:"Equilibrio", hint:"Giustizia" },
+  { name:"Scorpione", img:"p08.png", lore:"Mistero", hint:"Trasformazione" },
   { name:"Sagittario", img:"p09.png", lore:"Avventura", hint:"Verita" },
   { name:"Capricorno", img:"p10.png", lore:"Disciplina", hint:"Struttura" },
-  { name:"Acquario",   img:"p11.png", lore:"Visione", hint:"Rivoluzione" },
-  { name:"Pesci",      img:"p12.png", lore:"Sogno", hint:"Intuizione" }
+  { name:"Acquario", img:"p11.png", lore:"Visione", hint:"Rivoluzione" },
+  { name:"Pesci", img:"p12.png", lore:"Sogno", hint:"Intuizione" }
 ];
 
 let oroscopo2026 = {};
@@ -131,7 +132,7 @@ function sanitizePlainASCII(input) {
 }
 
 // ==========================
-// 🔗 Helpers: Link / YouTube
+// 🔗 Helpers: Link / YouTube (prefisso ps* per evitare "already declared")
 // ==========================
 function normalizeLink(raw) {
   let s = String(raw || "").trim();
@@ -142,27 +143,12 @@ function normalizeLink(raw) {
   return "";
 }
 
-function extractYouTubeId(input) {
+function psExtractYouTubeIdFromAny(input) {
   const s = String(input || "").trim();
   if (!s) return "";
 
-  // Se mi incolli un iframe o un embed code -> estrai src e poi ID
-  const iframeSrc = extractYouTubeSrcFromEmbedCode(s);
-  if (iframeSrc) {
-    const id = extractYouTubeIdFromUrl(iframeSrc);
-    if (id) return id;
-  }
-
-  // se e' gia' un ID
+  // se è già un ID
   if (/^[a-zA-Z0-9_-]{6,20}$/.test(s)) return s;
-
-  // URL normale
-  return extractYouTubeIdFromUrl(s);
-}
-
-function extractYouTubeIdFromUrl(url) {
-  const s = String(url || "").trim();
-  if (!s) return "";
 
   // youtu.be/ID
   let m = s.match(/youtu\.be\/([a-zA-Z0-9_-]{6,20})/i);
@@ -176,18 +162,11 @@ function extractYouTubeIdFromUrl(url) {
   m = s.match(/\/embed\/([a-zA-Z0-9_-]{6,20})/i);
   if (m) return m[1];
 
-  // music.youtube.com / shorts
+  // shorts/ID
   m = s.match(/\/shorts\/([a-zA-Z0-9_-]{6,20})/i);
   if (m) return m[1];
 
   return "";
-}
-
-function extractYouTubeSrcFromEmbedCode(code) {
-  const s = String(code || "");
-  // Cerca src="...." dentro un iframe
-  const m = s.match(/<iframe[^>]+src=["']([^"']+)["']/i);
-  return m ? m[1] : "";
 }
 
 function safeImg(img) {
@@ -254,7 +233,6 @@ async function ensureDailyOroscopoUpToDate() {
 
   const today = localDayKey();
   const key = "lunaDailyInit_" + today;
-
   if (localStorage.getItem(key) === "1") return;
 
   const lockRef = ref(db, `ruota-lunare/meta/dailyInitLock/${today}`);
@@ -265,6 +243,7 @@ async function ensureDailyOroscopoUpToDate() {
 
   const gotLock = tx?.committed === true && tx?.snapshot?.val()?.locked === true;
 
+  // se non ho lock: considero init "ok"
   if (!gotLock) {
     localStorage.setItem(key, "1");
     return;
@@ -282,10 +261,12 @@ async function ensureDailyOroscopoUpToDate() {
 
     for (const sign of Object.keys(def)) {
       if (sign === "updatedAt") continue;
+
       if (cur[sign] == null) {
         patch[sign] = def[sign];
         continue;
       }
+
       if (typeof cur[sign] === "object" && cur[sign] !== null) {
         const src = cur[sign];
         const dst = def[sign];
@@ -436,7 +417,7 @@ function initUI() {
   });
 
   const saved = sessionStorage.getItem("lunaUser");
-  if (saved) setTimeout(() => doLogin(saved), 3200);
+  if (saved) setTimeout(() => doLogin(saved), 520);
 
   function doLogin(name) {
     if (!name || name.length < 2) return;
@@ -532,13 +513,14 @@ function initSpinButton() {
       const st = cur && typeof cur === "object" ? cur : defaultSpinState();
       const remaining = Array.isArray(st.remaining) ? st.remaining.slice() : [];
 
+      // se finito -> reset round
       if (remaining.length === 0) {
         st.round = (st.round || 1) + 1;
         st.remaining = Array.from({length: SIGNS.length}, (_, i) => i);
         st.picked = [];
       }
 
-      const rem = st.remaining.slice();
+      const rem = Array.isArray(st.remaining) ? st.remaining.slice() : [];
       const pickIndex = Math.floor(Math.random() * rem.length);
       const winner = rem[pickIndex];
 
@@ -562,6 +544,7 @@ function listenSpinState() {
     setRoundInfo(st);
     markPicked(st);
 
+    // evita animazione al primo load
     if (ignoreFirstSpin) {
       ignoreFirstSpin = false;
       return;
@@ -643,7 +626,7 @@ function playIntro() {
 
 // ==========================
 // 🌌 MODALE OROSCOPO
-// ✅ cover “adeguato” (riempie senza schiacciare)
+// ✅ immagine: COVER “adeguato” (taglia minimo filo, riempie bene)
 // ==========================
 function initModal() {
   const closeBtn = document.getElementById("closeModal");
@@ -670,12 +653,9 @@ function openModal(data) {
   if (image) {
     image.classList.remove("zoom");
     image.style.backgroundImage = `url("${safeImg(data.img)}")`;
-
-    // ✅ cover “adeguato”
-    image.style.backgroundSize = "cover";
     image.style.backgroundPosition = "center";
     image.style.backgroundRepeat = "no-repeat";
-
+    image.style.backgroundSize = "cover"; // ✅ cover “adeguato”
     void image.offsetWidth;
     image.classList.add("zoom");
   }
@@ -731,7 +711,6 @@ async function postOroscopoToBacheca(signName) {
 
 // ==========================
 // 🧾 POST NEUTRO — lettura campi
-// ✅ accetta LINK oppure CODICE INCORPORAMENTO
 // ==========================
 function readNeutralFields(){
   const title = sanitizePlainASCII(document.getElementById("pnTitle")?.value || "");
@@ -739,9 +718,8 @@ function readNeutralFields(){
   const link  = normalizeLink(document.getElementById("pnLink")?.value || "");
   const image = String(document.getElementById("pnImage")?.value || "").trim();
 
-  // ✅ qui puoi incollare: ID / link / iframe embed
-  const videoId = extractYouTubeId(document.getElementById("pnVideo")?.value || "");
-  const musicId = extractYouTubeId(document.getElementById("pnMusic")?.value || "");
+  const videoId = psExtractYouTubeIdFromAny(document.getElementById("pnVideo")?.value || "");
+  const musicId = psExtractYouTubeIdFromAny(document.getElementById("pnMusic")?.value || "");
 
   const mode =
     document.querySelector('input[name="pnVideoMode"]:checked')?.value || "visible";
@@ -809,15 +787,12 @@ async function postNeutralToBacheca() {
 }
 
 // ==========================
-// 🧾 COPIA POST — genera HTML incollabile (SOTTO 5000)
-// ✅ ultra compatto (bacheche con limite 5000)
-// ✅ no <script>
-// ✅ usa la TUA extractYouTubeId() già presente
-// ✅ accetta anche codice <iframe ...> come input
-// ✅ immagine/gif cover “adeguato”
+// 🧾 COPIA POST — HTML incollabile (tasti funzionano come tuo esempio)
+// ✅ enablejsapi=1 + postMessage play/pause
+// ✅ iframe 1×1 hidden (come il tuo)
+// ✅ GIF/IMG cover “adeguato”
+// ✅ Limite 5000: minify + fallback template se troppo lungo
 // ==========================
-const BACHECA_LIMIT = 5000;
-
 function escapeHtml(s){
   return String(s||"")
     .replaceAll("&","&amp;")
@@ -827,55 +802,63 @@ function escapeHtml(s){
     .replaceAll("'","&#039;");
 }
 
-// ✅ accetta:
-// - ID
-// - link youtube
-// - codice embed <iframe ...src=".../embed/ID"...>
-function psExtractYouTubeIdFromAny(input){
-  const s = String(input||"").trim();
-  if (!s) return "";
-  const m = s.match(/youtube\.com\/embed\/([a-zA-Z0-9_-]{6,20})/i);
-  if (m) return m[1];
-  // usa la tua funzione già esistente
-  return extractYouTubeId(s);
-}
-
 function psMinifyHtml(html){
-  return String(html)
+  return String(html || "")
+    .replace(/\s+\n/g, "\n")
+    .replace(/\n\s+/g, "\n")
+    .replace(/\n{2,}/g, "\n")
     .replace(/\s{2,}/g, " ")
-    .replace(/>\s+</g, "><")
     .trim();
 }
 
-// se troppo lungo: taglia body progressivamente
-function psFitToLimit({title, body, link, image, videoId, musicId, videoMode}){
-  let b = String(body||"");
-  let html = psBuildPublishablePostHTML({title, body:b, link, image, videoId, musicId, videoMode});
-  html = psMinifyHtml(html);
+function psFallbackMiniPost({ title, body, link, image, musId }) {
+  const t = escapeHtml(title || "Luna Vallyy - Pianeta Segreto");
+  const b = escapeHtml(body || "");
+  const l = escapeHtml(link || "https://alexcaos75.github.io/oroscopo/");
+  const img = String(image || "").trim();
+  const hasImg = !!img;
+  const imgSrc = escapeHtml(img);
+  const origin = escapeHtml(location.origin || "");
+  const uid = "psm_" + Math.random().toString(36).slice(2, 9);
+  const playerId = uid + "_yt";
 
-  if (html.length <= BACHECA_LIMIT) return html;
+  const musicEmbed = musId
+    ? `https://www.youtube.com/embed/${escapeHtml(musId)}?enablejsapi=1&loop=1&playlist=${escapeHtml(musId)}&playsinline=1&origin=${origin}`
+    : "";
 
-  let max = Math.max(80, b.length);
-  while (max > 80) {
-    max = Math.floor(max * 0.88);
-    const cut = b.slice(0, max).trim() + "…";
-    html = psMinifyHtml(psBuildPublishablePostHTML({title, body:cut, link, image, videoId, musicId, videoMode}));
-    if (html.length <= BACHECA_LIMIT) return html;
-  }
+  return psMinifyHtml(`
+<div style="max-width:900px;margin:0 auto;padding:18px;border-radius:22px;
+background:linear-gradient(160deg,#071620 0%,#0c2a3d 50%,#124158 100%);
+border:1px solid rgba(0,255,255,.28);color:#eaffff;font-family:Arial,sans-serif;">
+  <div style="font-size:22px;font-weight:900;letter-spacing:3px;text-align:center;">${t}</div>
+  ${b ? `<div style="margin-top:12px;line-height:1.5;font-size:15px;white-space:pre-wrap;">${b}</div>` : ``}
+  <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;justify-content:center;">
+    <a href="${l}" target="_blank" rel="noopener"
+      style="padding:12px 18px;border-radius:999px;text-decoration:none;font-weight:900;
+      background:rgba(0,255,255,.12);border:1px solid rgba(0,255,255,.45);color:#bfffff;">Apri</a>
 
-  // ultima spiaggia: solo titolo + link
-  html = psMinifyHtml(psBuildPublishablePostHTML({
-    title, body: "", link, image, videoId, musicId, videoMode
-  }));
+    ${musId ? `
+    <button onclick="document.getElementById('${playerId}').contentWindow.postMessage(JSON.stringify({event:'command',func:'playVideo',args:[]}), '*');"
+      style="padding:12px 18px;border-radius:999px;font-weight:900;cursor:pointer;
+      background:rgba(0,255,255,.10);border:1px solid rgba(0,255,255,.45);color:#bfffff;">Ascolta</button>
 
-  // se ancora non basta: tolgo tutto tranne link
-  if (html.length > BACHECA_LIMIT) {
-    html = psMinifyHtml(psBuildPublishablePostHTML({
-      title, body: "", link, image: "", videoId: "", musicId: "", videoMode: "visible"
-    }));
-  }
+    <button onclick="document.getElementById('${playerId}').contentWindow.postMessage(JSON.stringify({event:'command',func:'pauseVideo',args:[]}), '*');"
+      style="padding:12px 18px;border-radius:999px;font-weight:900;cursor:pointer;
+      background:rgba(255,180,180,.10);border:1px solid rgba(255,190,190,.45);color:#ffd0d0;">Stop</button>
+    ` : ``}
+  </div>
 
-  return html.slice(0, BACHECA_LIMIT - 1);
+  ${hasImg ? `
+  <div style="margin-top:14px;border-radius:16px;overflow:hidden;">
+    <img src="${imgSrc}" style="width:100%;height:min(62vh,620px);display:block;object-fit:cover;background:#000;" />
+  </div>` : ``}
+
+  ${musId ? `
+  <div style="display:block;visibility:hidden;height:1px;overflow:hidden;margin:0;padding:0;">
+    <iframe id="${playerId}" width="1" height="1" src="${musicEmbed}" frameborder="0" allow="autoplay"></iframe>
+  </div>` : ``}
+</div>
+`);
 }
 
 function psBuildPublishablePostHTML({ title, body, link, image, videoId, musicId, videoMode }) {
@@ -891,50 +874,126 @@ function psBuildPublishablePostHTML({ title, body, link, image, videoId, musicId
   const vid = (videoMode === "visible") ? psExtractYouTubeIdFromAny(videoId) : "";
   const mus = (videoMode === "hidden") ? psExtractYouTubeIdFromAny(musicId || videoId) : "";
 
+  const uid = "psm_" + Math.random().toString(36).slice(2, 9);
+  const playerId = uid + "_yt";
+
+  const origin = escapeHtml(location.origin || "");
+
+  const musicEmbed = mus
+    ? `https://www.youtube.com/embed/${escapeHtml(mus)}?enablejsapi=1&loop=1&playlist=${escapeHtml(mus)}&rel=0&modestbranding=1&playsinline=1&origin=${origin}`
+    : "";
+
+  const videoEmbed = vid
+    ? `https://www.youtube.com/embed/${escapeHtml(vid)}?rel=0&modestbranding=1&playsinline=1`
+    : "";
+
   return `
-<div style="max-width:920px;margin:10px auto;border:1px solid rgba(255,255,255,.15);border-radius:18px;overflow:hidden;background:rgba(0,0,0,.35)">
-  <div style="padding:12px 14px">
-    <div style="font-weight:900;font-size:16px;letter-spacing:.2px;color:#fff">${t}</div>
-    ${b ? `<div style="margin-top:8px;white-space:pre-wrap;line-height:1.45;font:13px ui-monospace,Menlo,Consolas,monospace;color:rgba(255,255,255,.92)">${b}</div>` : ``}
-    <div style="margin-top:10px">
-      <a href="${l}" target="_blank" rel="noopener" style="display:inline-block;padding:10px 14px;border-radius:999px;text-decoration:none;font-weight:900;font-size:12px;letter-spacing:.3px;color:#fff;border:1px solid rgba(255,255,255,.18);background:rgba(140,170,255,.22)">APRI ORACOLO</a>
+<div style="max-width:920px;margin:14px auto;border-radius:26px;overflow:hidden;
+border:1px solid rgba(255,255,255,.14);
+background:linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.06));
+box-shadow:0 26px 90px rgba(0,0,0,.55);">
+
+  <div style="padding:18px 18px 14px;background:
+  radial-gradient(900px 420px at 10% 0%, rgba(180,80,255,.25), transparent 60%),
+  radial-gradient(900px 420px at 95% 20%, rgba(40,230,255,.20), transparent 60%),
+  radial-gradient(900px 420px at 50% 110%, rgba(255,80,210,.14), transparent 60%),
+  rgba(0,0,0,.22);">
+
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div style="width:46px;height:46px;border-radius:16px;
+      background:linear-gradient(135deg, rgba(180,80,255,.90), rgba(40,230,255,.40));
+      border:1px solid rgba(255,255,255,.18);
+      display:grid;place-items:center;font-weight:950;letter-spacing:.6px;color:white;
+      box-shadow:0 18px 60px rgba(110,120,255,.22);">PS</div>
+
+      <div style="min-width:0;">
+        <div style="font-weight:950;font-size:18px;letter-spacing:.2px;color:rgba(255,255,255,.95);">${t}</div>
+        <div style="margin-top:6px;font-size:13px;opacity:.86;color:rgba(255,255,255,.86);line-height:1.3;">
+          Il Pianeta Segreto sussurra: ascolta con calma e scegli con eleganza.
+        </div>
+      </div>
+    </div>
+
+    ${b ? `
+    <div style="margin-top:14px;white-space:pre-wrap;line-height:1.55;
+    font-family:ui-monospace, Menlo, Consolas, monospace;font-size:13.6px;
+    color:rgba(255,255,255,.92);background:rgba(0,0,0,.22);
+    border:1px solid rgba(255,255,255,.14);border-radius:18px;padding:14px;">${b}</div>
+    ` : ``}
+
+    <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+      <a href="${l}" target="_blank" rel="noopener"
+      style="display:inline-flex;align-items:center;gap:10px;padding:12px 16px;border-radius:999px;text-decoration:none;
+      font-weight:950;font-size:13px;letter-spacing:.35px;color:white;
+      background:linear-gradient(135deg, rgba(180,80,255,.74), rgba(40,230,255,.30));
+      border:1px solid rgba(255,255,255,.18);box-shadow:0 18px 56px rgba(80,120,255,.22);">APRI ORACOLO</a>
+
       ${mus ? `
-      <span style="margin-left:8px;font-weight:900;font-size:12px;opacity:.9">ASCOLTA ↓</span>
-      <div id="map" style="display:block;visibility:hidden;height:0;overflow:hidden">
-        <iframe src="https://www.youtube.com/embed/${escapeHtml(mus)}?autoplay=1&loop=1&playlist=${escapeHtml(mus)}&controls=0&rel=0&modestbranding=1&playsinline=1"
-          width="1" height="1" frameborder="0"
-          allow="autoplay; encrypted-media; picture-in-picture"
-          referrerpolicy="strict-origin-when-cross-origin"
-          allowfullscreen></iframe>
-      </div>` : ``}
+      <button onclick="document.getElementById('${playerId}').contentWindow.postMessage(JSON.stringify({event:'command',func:'playVideo',args:[]}), '*');"
+      style="padding:14px 34px;font-size:16px;font-weight:900;letter-spacing:.12em;border-radius:999px;cursor:pointer;
+      background:rgba(0,255,255,.10);border:1px solid rgba(0,255,255,.45);color:#bfffff;">ASCOLTA</button>
+
+      <button onclick="document.getElementById('${playerId}').contentWindow.postMessage(JSON.stringify({event:'command',func:'pauseVideo',args:[]}), '*');"
+      style="padding:14px 34px;font-size:16px;font-weight:900;letter-spacing:.12em;border-radius:999px;cursor:pointer;
+      background:rgba(255,180,180,.10);border:1px solid rgba(255,190,190,.45);color:#ffd0d0;">STOP</button>
+      ` : ``}
     </div>
   </div>
 
   ${hasImg ? `
-  <div style="border-top:1px solid rgba(255,255,255,.12);background:#000">
+  <div style="background:rgba(0,0,0,.35);border-top:1px solid rgba(255,255,255,.10);">
     <img src="${imgSrc}" alt="Pianeta Segreto"
-      style="display:block;width:100%;height:520px;max-height:70vh;object-fit:cover;background:#000" />
-  </div>` : ``}
+    style="width:100%;height:min(72vh,720px);display:block;object-fit:cover;background:#000;" />
+  </div>
+  ` : ``}
 
   ${vid ? `
-  <div style="border-top:1px solid rgba(255,255,255,.12);padding:10px;background:rgba(0,0,0,.25)">
-    <iframe src="https://www.youtube.com/embed/${escapeHtml(vid)}?rel=0&modestbranding=1&playsinline=1"
-      style="width:100%;aspect-ratio:16/9;border:0;border-radius:14px;overflow:hidden"
-      allow="accelerometer; autoplay; encrypted-media; picture-in-picture"
-      referrerpolicy="strict-origin-when-cross-origin"
-      allowfullscreen></iframe>
-  </div>` : ``}
+  <div style="padding:16px;background:rgba(0,0,0,.25);border-top:1px solid rgba(255,255,255,.10);">
+    <iframe src="${videoEmbed}" style="width:100%;aspect-ratio:16/9;border-radius:18px;border:1px solid rgba(255,255,255,.14);"
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+    referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+  </div>
+  ` : ``}
+
+  ${mus ? `
+  <div style="display:block;visibility:hidden;height:1px;overflow:hidden;margin:0;padding:0;">
+    <iframe id="${playerId}" width="1" height="1"
+    src="${musicEmbed}"
+    frameborder="0"
+    allow="autoplay"
+    referrerpolicy="strict-origin-when-cross-origin"></iframe>
+  </div>
+  ` : ``}
+
 </div>
 `.trim();
 }
 
+function psFitToBachecaLimit(html, limit = 4900) {
+  let out = psMinifyHtml(html);
+  if (out.length <= limit) return out;
+
+  // tentativo 1: taglia un po' gli spazi (già fatto), poi fallback mini
+  return null;
+}
+
 async function copyPostHTML(){
   const { title, body, link, image, videoId, musicId, videoMode } = readNeutralFields();
-  const html = psFitToLimit({ title, body, link, image, videoId, musicId, videoMode });
+
+  // genero “ricco”
+  let html = psBuildPublishablePostHTML({ title, body, link, image, videoId, musicId, videoMode });
+
+  // controllo limite bacheca (5000)
+  const fitted = psFitToBachecaLimit(html, 4900);
+  if (fitted) html = fitted;
+  else {
+    const musId = (videoMode === "hidden") ? psExtractYouTubeIdFromAny(musicId || videoId) : "";
+    html = psFallbackMiniPost({ title, body, link, image, musId });
+  }
 
   try{
     await navigator.clipboard.writeText(html);
-    alert(`COPIA POST OK (${html.length}/${BACHECA_LIMIT}). Incollalo in bacheca.`);
+    alert("COPIA POST OK: HTML copiato (incollalo in bacheca).");
   }catch{
     const ta = document.createElement("textarea");
     ta.value = html;
@@ -942,10 +1001,9 @@ async function copyPostHTML(){
     ta.select();
     document.execCommand("copy");
     document.body.removeChild(ta);
-    alert(`COPIA POST OK (${html.length}/${BACHECA_LIMIT}) (fallback).`);
+    alert("COPIA POST OK (fallback).");
   }
 }
-
 
 // ==========================
 // 📋 COPIA DISCORD (per segno selezionato)
@@ -1044,7 +1102,7 @@ function initAdmin() {
 }
 
 // ==========================
-// 🤖 LUNA BOT
+// 🤖 LUNA BOT (chat pubblica)
 // ==========================
 function lunaBot(text) {
   const now = Date.now();
@@ -1080,8 +1138,10 @@ async function init() {
   initAdmin();
   idlePulse();
 
+  // exports utili
   window.LUNA.migrateTodayToRichFormat = migrateTodayToRichFormat;
   window.LUNA.ensureDailyOroscopoUpToDate = ensureDailyOroscopoUpToDate;
+
+  // utili in console
+  window.LUNA.copyPostHTML = copyPostHTML;
 }
-
-
