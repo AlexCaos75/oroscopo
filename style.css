@@ -610,3 +610,24 @@ body{
   .controls{ top: calc(100% + 14px); }
   .chat-luna{ width: 320px; height: 400px; right: 14px; bottom: 14px; }
 }
+/* segni già usciti */
+.card.chosen{
+  filter: grayscale(0.15) saturate(1.1);
+  outline: 2px solid rgba(120,200,255,.55);
+  box-shadow: 0 0 0 3px rgba(0,0,0,.35), 0 14px 45px rgba(80,160,255,.20);
+  opacity: .95;
+}
+
+/* winner del giro */
+.card.winner{
+  outline: 3px solid rgba(255,255,255,.80);
+  box-shadow: 0 0 0 4px rgba(160,90,255,.25), 0 20px 70px rgba(140,120,255,.35);
+  transform: translateY(-2px) scale(1.02);
+}
+
+/* doomed (effetto scena) */
+.card.doomed{
+  opacity:.35;
+  filter: grayscale(.7) blur(.2px);
+}
+
