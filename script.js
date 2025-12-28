@@ -776,7 +776,11 @@ async function postNeutralToBacheca() {
 }
 
 // ==========================
-// 🧾 COPIA POST — genera HTML incollabile (ROBUSTO: NO <script>, NO id globali)
+// 🧾 COPIA POST — genera HTML incollabile (ROBUSTO)
+// ✅ NO <script> (molti siti lo bloccano)
+// ✅ NO id globali (niente conflitti tra post)
+// ✅ Musica: iframe 1×1 fixed (più compatibile di 0×0 offscreen)
+// ✅ GIF/IMG: riempie 100% del box (cover)
 // ==========================
 function escapeHtml(s){
   return String(s||"")
@@ -798,8 +802,13 @@ function buildPublishablePostHTML({ title, body, link, image, videoId, musicId, 
   const vid = (videoMode === "visible") ? (videoId || "") : "";
   const mus = (videoMode === "hidden") ? (musicId || videoId || "") : "";
 
-  // HTML (single block) — bello e “universale”
-  // ✅ musica: NO <script>, NO funzioni globali, NO id fissi
+  const escT = escapeHtml(t);
+  const escB = escapeHtml(b);
+  const escL = escapeHtml(l);
+  const escImg = escapeHtml(imgSrc);
+  const escVid = escapeHtml(vid);
+  const escMus = escapeHtml(mus);
+
   return `
 <div style="
   max-width:920px;
@@ -830,7 +839,7 @@ function buildPublishablePostHTML({ title, body, link, image, videoId, musicId, 
       ">PS</div>
       <div style="min-width:0;">
         <div style="font-weight:950;font-size:18px;letter-spacing:.2px;color:rgba(255,255,255,.95);">
-          ${escapeHtml(t)}
+          ${escT}
         </div>
         <div style="margin-top:6px;font-size:13px;opacity:.84;color:rgba(255,255,255,.86);line-height:1.3;">
           Il Pianeta Segreto sussurra: ascolta con calma e scegli con eleganza.
@@ -838,16 +847,21 @@ function buildPublishablePostHTML({ title, body, link, image, videoId, musicId, 
       </div>
     </div>
 
-    <div style="margin-top:14px;white-space:pre-wrap;line-height:1.55;font-family:ui-monospace, Menlo, Consolas, monospace;
-      font-size:13.6px;color:rgba(255,255,255,.92);
+    <div style="
+      margin-top:14px;
+      white-space:pre-wrap;
+      line-height:1.55;
+      font-family:ui-monospace, Menlo, Consolas, monospace;
+      font-size:13.6px;
+      color:rgba(255,255,255,.92);
       background:rgba(0,0,0,.22);
       border:1px solid rgba(255,255,255,.14);
       border-radius:18px;
       padding:14px;
-    ">${escapeHtml(b)}</div>
+    ">${escB}</div>
 
     <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
-      <a href="${escapeHtml(l)}" target="_blank" rel="noopener"
+      <a href="${escL}" target="_blank" rel="noopener"
         style="
           display:inline-flex;align-items:center;gap:10px;
           padding:12px 16px;border-radius:999px;
@@ -862,57 +876,88 @@ function buildPublishablePostHTML({ title, body, link, image, videoId, musicId, 
       </a>
 
       ${mus ? `
-      <span data-psmusic style="position:relative; display:inline-flex; gap:10px; flex-wrap:wrap; align-items:center;">
-        <button onclick="(function(btn){
-          try{
-            var wrap = btn.closest('[data-psmusic]');
-            var fr = wrap && wrap.querySelector('iframe');
-            if(!fr) return;
-            fr.src = 'https://www.youtube.com/embed/${escapeHtml(mus)}?autoplay=1&loop=1&playlist=${escapeHtml(mus)}&controls=0&rel=0&modestbranding=1';
-          }catch(e){}
-        })(this);" style="
-          padding:12px 16px;border-radius:999px;
-          font-weight:950;font-size:13px;letter-spacing:.35px;
-          color:white;cursor:pointer;
-          background:linear-gradient(135deg, rgba(255,120,220,.40), rgba(120,120,255,.38));
-          border:1px solid rgba(255,255,255,.18);
-          box-shadow:0 18px 56px rgba(0,0,0,.35);
-        ">ASCOLTA</button>
+      <span data-psmusic style="display:inline-flex;gap:10px;flex-wrap:wrap;align-items:center;">
+        <button
+          style="
+            padding:12px 16px;border-radius:999px;
+            font-weight:950;font-size:13px;letter-spacing:.35px;
+            color:white;cursor:pointer;
+            background:linear-gradient(135deg, rgba(255,120,220,.40), rgba(120,120,255,.38));
+            border:1px solid rgba(255,255,255,.18);
+            box-shadow:0 18px 56px rgba(0,0,0,.35);
+          "
+          onclick="(function(btn){
+            try{
+              var wrap = btn.closest('[data-psmusic]');
+              if(!wrap) return;
+              var fr = wrap.querySelector('iframe');
+              if(!fr) return;
 
-        <button onclick="(function(btn){
-          try{
-            var wrap = btn.closest('[data-psmusic]');
-            var fr = wrap && wrap.querySelector('iframe');
-            if(!fr) return;
-            fr.src = 'about:blank';
-          }catch(e){}
-        })(this);" style="
-          padding:12px 16px;border-radius:999px;
-          font-weight:950;font-size:13px;letter-spacing:.35px;
-          color:white;cursor:pointer;
-          background:rgba(255,255,255,.10);
-          border:1px solid rgba(255,255,255,.18);
-        ">STOP</button>
+              // ✅ iframe “attivo” (1×1) per evitare sospensioni audio
+              fr.style.width='1px';
+              fr.style.height='1px';
+              fr.style.opacity='0';
+              fr.style.position='fixed';
+              fr.style.left='0';
+              fr.style.bottom='0';
+              fr.style.pointerEvents='none';
+              fr.style.border='0';
 
-        <iframe src="about:blank"
-          style="width:0;height:0;border:0;position:absolute;left:-9999px;top:-9999px;"
-          allow="autoplay; encrypted-media"></iframe>
+              fr.src='https://www.youtube.com/embed/${escMus}?autoplay=1&loop=1&playlist=${escMus}&controls=0&rel=0&modestbranding=1&playsinline=1';
+            }catch(e){}
+          })(this);"
+        >ASCOLTA</button>
+
+        <button
+          style="
+            padding:12px 16px;border-radius:999px;
+            font-weight:950;font-size:13px;letter-spacing:.35px;
+            color:white;cursor:pointer;
+            background:rgba(255,255,255,.10);
+            border:1px solid rgba(255,255,255,.18);
+          "
+          onclick="(function(btn){
+            try{
+              var wrap = btn.closest('[data-psmusic]');
+              if(!wrap) return;
+              var fr = wrap.querySelector('iframe');
+              if(!fr) return;
+              fr.src='about:blank';
+            }catch(e){}
+          })(this);"
+        >STOP</button>
+
+        <iframe
+          src="about:blank"
+          style="width:1px;height:1px;opacity:0;position:fixed;left:0;bottom:0;pointer-events:none;border:0;"
+          allow="autoplay; encrypted-media"
+        ></iframe>
       </span>
       ` : ``}
     </div>
   </div>
 
   ${hasImg ? `
-  <div style="background:rgba(0,0,0,.35); border-top:1px solid rgba(255,255,255,.10);">
-    <img src="${escapeHtml(imgSrc)}" alt="Pianeta Segreto"
-      style="width:100%;height:auto;display:block;object-fit:contain;max-height:620px;background:rgba(0,0,0,.35);" />
+  <div style="
+    background:rgba(0,0,0,.35);
+    border-top:1px solid rgba(255,255,255,.10);
+  ">
+    <img src="${escImg}" alt="Pianeta Segreto"
+      style="
+        width:100%;
+        height:80vh;            /* ✅ riempie */
+        max-height:720px;       /* ✅ non diventa infinito */
+        display:block;
+        object-fit:cover;       /* ✅ riempie 100% (taglia un filo se serve) */
+        background:#000;
+      " />
   </div>
   ` : ``}
 
   ${vid ? `
   <div style="padding:16px;background:rgba(0,0,0,.25);border-top:1px solid rgba(255,255,255,.10);">
     <iframe
-      src="https://www.youtube.com/embed/${escapeHtml(vid)}?rel=0&modestbranding=1"
+      src="https://www.youtube.com/embed/${escVid}?rel=0&modestbranding=1&playsinline=1"
       style="width:100%;aspect-ratio:16/9;border-radius:18px;border:1px solid rgba(255,255,255,.14);"
       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
       allowfullscreen></iframe>
@@ -940,6 +985,7 @@ async function copyPostHTML(){
     alert("COPIA POST OK (fallback).");
   }
 }
+
 
 // ==========================
 // 📋 COPIA DISCORD (per segno selezionato)
@@ -1078,4 +1124,5 @@ async function init() {
   window.LUNA.migrateTodayToRichFormat = migrateTodayToRichFormat;
   window.LUNA.ensureDailyOroscopoUpToDate = ensureDailyOroscopoUpToDate;
 }
+
 
