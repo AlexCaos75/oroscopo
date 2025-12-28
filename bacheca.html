@@ -1,82 +1,738 @@
-// ==========================
-// 🧾 POST SPOT (BACHECA PIANETA SEGRETO) — CAPOLAVORO
-// - niente segni zodiacali
-// - testo elegante scelto da Luna (ASCII safe)
-// - immagine + youtube a scelta (o random)
-// - salva payload compatibile con bacheca.html
-// ==========================
-async function postSpotToBacheca() {
-  if (!isAdmin) return alert("Solo ADMIN puo postare in bacheca.");
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#070818" />
+  <title>Bacheca Pianeta Segreto</title>
 
-  const author = sanitizePlainASCII(window.LUNA.user || "Luna Vallyy");
-  const oracle = "Oracolo di Pianeta Segreto";
+  <style>
+    :root{
+      --bg0:#050611;
+      --bg1:#07081a;
+      --bg2:#0b0e2a;
 
-  // ✅ Titolo/sottotitolo bacheca (no accenti, no emoji, no virgolette strane)
-  const title = sanitizePlainASCII("LUNA VALLYY - ORACOLO DI PIANETA SEGRETO");
-  const subtitle = sanitizePlainASCII("Il nostro oracolo ci accompagna. Messaggio pulito, pronto anche per Discord.");
+      --card: rgba(255,255,255,.08);
+      --card2: rgba(255,255,255,.11);
+      --border: rgba(255,255,255,.16);
 
-  // ✅ Testo (puoi cambiarlo quando vuoi: resta sempre pulito)
-  const body = sanitizePlainASCII(
-    "OROSCOPO DI LUNA\n\n" +
-    "Il destino parla a chi sa ascoltare.\n" +
-    "Oggi il cielo invita alla chiarezza,\n" +
-    "alla scelta consapevole,\n" +
-    "alla fiducia nel proprio cammino.\n\n" +
-    "Segui cio che senti vero.\n"
-  );
+      --txt: rgba(255,255,255,.93);
+      --muted: rgba(255,255,255,.70);
+      --muted2: rgba(255,255,255,.55);
 
-  // ✅ Link fisso del bottone / accesso
-  const link = "https://alexcaos75.github.io/oroscopo/";
+      --shadow: 0 28px 110px rgba(0,0,0,.60);
+      --shadow2: 0 14px 60px rgba(0,0,0,.42);
 
-  // ✅ Immagini (relative nella repo GitHub Pages, stessa cartella /immagini)
-  // Puoi mettere PNG/JPG/WEBP. Se non esiste -> non viene mostrata, ma il post resta OK.
-  const IMAGE_POOL = [
-    "immagini/spot1.jpg",
-    "immagini/spot2.jpg",
-    "immagini/spot3.jpg"
-  ];
+      --r: 22px;
+      --r2: 16px;
 
-  // ✅ YouTube: solo ID video (non link completo)
-  // Esempio: https://www.youtube.com/watch?v=dQw4w9WgXcQ  ->  dQw4w9WgXcQ
-  const YT_POOL = [
-    "" // metti un ID vero oppure lascia vuoto
-    // "dQw4w9WgXcQ"
-  ];
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
 
-  // selezione random (se vuoi fisso: metti direttamente stringa)
-  const image = (IMAGE_POOL.length)
-    ? IMAGE_POOL[Math.floor(Math.random() * IMAGE_POOL.length)]
-    : "";
+      --g1: #7a5cff;
+      --g2: #34d3ff;
+      --g3: #ff4fd8;
+      --g4: #ffd24a;
+    }
 
-  const video = (YT_POOL.length)
-    ? (YT_POOL[Math.floor(Math.random() * YT_POOL.length)] || "")
-    : "";
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      font-family:var(--sans);
+      color:var(--txt);
+      background:
+        radial-gradient(1200px 760px at 18% 10%, rgba(122,92,255,.34), transparent 55%),
+        radial-gradient(1100px 720px at 85% 28%, rgba(52,211,255,.22), transparent 60%),
+        radial-gradient(1100px 720px at 55% 92%, rgba(255,79,216,.18), transparent 55%),
+        radial-gradient(900px 600px at 40% 55%, rgba(255,210,74,.11), transparent 58%),
+        linear-gradient(180deg, var(--bg2), var(--bg0));
+      overflow-x:hidden;
+    }
 
-  // ✅ Discord safe: SOLO testo + link
-  const discordText = sanitizePlainASCII(
-    `${title}\n` +
-    `${subtitle}\n\n` +
-    `${body}\n\n` +
-    `LINK: ${link}`
-  );
+    /* stars */
+    body:before{
+      content:"";
+      position:fixed; inset:0;
+      pointer-events:none;
+      background-image:
+        radial-gradient(1px 1px at 12% 24%, rgba(255,255,255,.35), transparent 45%),
+        radial-gradient(1px 1px at 24% 68%, rgba(255,255,255,.22), transparent 45%),
+        radial-gradient(1px 1px at 48% 18%, rgba(255,255,255,.20), transparent 45%),
+        radial-gradient(1px 1px at 72% 42%, rgba(255,255,255,.22), transparent 45%),
+        radial-gradient(1px 1px at 86% 78%, rgba(255,255,255,.20), transparent 45%),
+        radial-gradient(1px 1px at 92% 26%, rgba(255,255,255,.16), transparent 45%);
+      opacity:.95;
+      mix-blend-mode:screen;
+      filter: blur(.1px);
+    }
 
-  // payload bacheca (SPOT = evento separato, non oroscopo segni)
-  const payload = {
-    at: Date.now(),
-    mode: "SPOT",
-    tag: "Pianeta Segreto",
-    author,
-    oracle,
-    title,
-    subtitle,
-    text: discordText,
-    image: sanitizePlainASCII(image), // stringa semplice
-    video: sanitizePlainASCII(video), // ID semplice
-    link: sanitizePlainASCII(link)
-  };
+    .wrap{
+      max-width: 1020px;
+      margin: 0 auto;
+      padding: 22px 16px 44px;
+    }
 
-  await set(ref(db, BACHECA_LATEST), payload);
+    .topbar{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:14px;
+      margin: 10px 0 18px;
+      flex-wrap: wrap;
+    }
 
-  lunaBot("Bacheca aggiornata: SPOT pubblicato dal Pianeta Segreto.");
-  alert("POST OK: SPOT pubblicato in bacheca.");
-}
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:14px;
+      user-select:none;
+      min-width: min(680px, 100%);
+    }
+
+    .sigil{
+      width:50px;height:50px;
+      border-radius:16px;
+      background:
+        radial-gradient(circle at 28% 26%, rgba(255,255,255,.26), transparent 55%),
+        linear-gradient(135deg, rgba(122,92,255,.65), rgba(52,211,255,.32) 55%, rgba(255,79,216,.28));
+      border:1px solid rgba(255,255,255,.20);
+      box-shadow: 0 22px 70px rgba(122,92,255,.25);
+      display:grid;
+      place-items:center;
+      font-weight:900;
+      letter-spacing:.7px;
+      text-transform:uppercase;
+    }
+
+    .brand h1{
+      margin:0;
+      font-size: 20px;
+      letter-spacing:.2px;
+    }
+    .brand p{
+      margin:4px 0 0;
+      font-size: 13px;
+      line-height:1.35;
+      color: var(--muted2);
+    }
+
+    .actions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+      align-items:center;
+    }
+
+    .btn{
+      appearance:none;
+      border:1px solid rgba(255,255,255,.16);
+      background: rgba(255,255,255,.08);
+      color:var(--txt);
+      padding: 10px 12px;
+      border-radius: 999px;
+      cursor:pointer;
+      font-weight:750;
+      font-size: 13px;
+      transition: transform .10s ease, filter .18s ease, background .18s ease, border-color .18s ease;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      box-shadow: 0 14px 44px rgba(0,0,0,.28);
+      text-decoration:none;
+      white-space: nowrap;
+    }
+    .btn:hover{
+      transform: translateY(-1px);
+      background: rgba(255,255,255,.11);
+      border-color: rgba(255,255,255,.26);
+      filter: brightness(1.02);
+    }
+
+    .btn.primary{
+      border-color: rgba(255,255,255,.22);
+      background: linear-gradient(135deg, rgba(122,92,255,.70), rgba(52,211,255,.34) 55%, rgba(255,79,216,.32));
+      box-shadow: 0 18px 70px rgba(122,92,255,.24);
+    }
+
+    .btn.gold{
+      border-color: rgba(255,255,255,.22);
+      background: linear-gradient(135deg, rgba(255,210,74,.40), rgba(255,79,216,.24));
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap: 14px;
+      align-items:start;
+    }
+
+    @media (max-width: 920px){
+      .grid{ grid-template-columns: 1fr; }
+      .brand{ min-width: 100%; }
+      .actions{ justify-content:flex-start; }
+    }
+
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.06));
+      border:1px solid rgba(255,255,255,.16);
+      border-radius: var(--r);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      position:relative;
+    }
+    .card:before{
+      content:"";
+      position:absolute; inset:-2px;
+      background:
+        radial-gradient(720px 320px at 10% 0%, rgba(122,92,255,.34), transparent 60%),
+        radial-gradient(760px 320px at 95% 30%, rgba(52,211,255,.22), transparent 60%),
+        radial-gradient(680px 300px at 50% 100%, rgba(255,79,216,.20), transparent 60%),
+        radial-gradient(520px 240px at 50% 55%, rgba(255,210,74,.12), transparent 65%);
+      pointer-events:none;
+      opacity:.95;
+      mix-blend-mode:screen;
+    }
+
+    .card-inner{
+      position:relative;
+      padding: 18px;
+    }
+
+    .meta{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+
+    .title{
+      margin:0;
+      font-size: 18px;
+      font-weight: 950;
+      letter-spacing: .25px;
+      text-transform: uppercase;
+    }
+    .subtitle{
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.4;
+      max-width: 66ch;
+    }
+
+    .status{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      font-weight:800;
+      font-size:12px;
+      color: rgba(255,255,255,.78);
+      padding:8px 10px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.18);
+      backdrop-filter: blur(10px);
+    }
+    .dot{
+      width:8px;height:8px;border-radius:99px;
+      background: rgba(52,211,255,.9);
+      box-shadow: 0 0 0 6px rgba(52,211,255,.15);
+      animation: pulse 1.4s infinite ease-in-out;
+    }
+    @keyframes pulse{
+      0%,100%{ transform: scale(1); opacity: 1; }
+      50%{ transform: scale(1.25); opacity: .65; }
+    }
+
+    .chips{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-top: 10px;
+    }
+    .chip{
+      font-size: 12px;
+      color: rgba(255,255,255,.86);
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.18);
+      padding: 7px 10px;
+      border-radius: 999px;
+      backdrop-filter: blur(8px);
+    }
+    .chip strong{ color: rgba(255,255,255,.92); }
+
+    .divider{
+      height:1px;
+      background: rgba(255,255,255,.12);
+      margin: 14px 0 14px;
+    }
+
+    .box{
+      background: rgba(0,0,0,.22);
+      border:1px solid rgba(255,255,255,.14);
+      border-radius: var(--r2);
+      padding: 14px;
+      box-shadow: var(--shadow2);
+      backdrop-filter: blur(10px);
+    }
+
+    .loading{
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    pre.text{
+      margin:0;
+      white-space:pre-wrap;
+      word-break:break-word;
+      font-family: var(--mono);
+      font-size: 13.5px;
+      line-height: 1.55;
+      color: rgba(255,255,255,.92);
+    }
+
+    .media{
+      width:100%;
+      max-height: 520px;
+      object-fit: cover;
+      border-radius: var(--r2);
+      margin-top: 14px;
+      border:1px solid rgba(255,255,255,.16);
+      box-shadow: var(--shadow2);
+      display:none;
+    }
+
+    .video-wrap{
+      margin-top:14px;
+      border-radius: var(--r2);
+      overflow:hidden;
+      border:1px solid rgba(255,255,255,.16);
+      box-shadow: var(--shadow2);
+      display:none;
+      background: rgba(0,0,0,.25);
+    }
+    .video-wrap iframe{
+      width:100%;
+      aspect-ratio: 16/9;
+      display:block;
+    }
+
+    .side{
+      display:grid;
+      gap:14px;
+    }
+
+    .panel{
+      background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.06));
+      border:1px solid rgba(255,255,255,.16);
+      border-radius: var(--r);
+      box-shadow: var(--shadow2);
+      padding: 14px;
+      position:relative;
+      overflow:hidden;
+    }
+    .panel:before{
+      content:"";
+      position:absolute; inset:-2px;
+      background:
+        radial-gradient(520px 220px at 20% 0%, rgba(255,210,74,.18), transparent 60%),
+        radial-gradient(520px 220px at 90% 40%, rgba(255,79,216,.16), transparent 60%);
+      pointer-events:none;
+      mix-blend-mode:screen;
+    }
+    .panel > *{ position:relative; }
+
+    .panel h3{
+      margin:0 0 8px;
+      font-size: 14px;
+      letter-spacing: .25px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,.86);
+    }
+    .panel p{
+      margin:0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .cta{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      margin-top: 12px;
+    }
+
+    .mega{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:10px;
+      padding: 16px 18px;
+      border-radius: 999px;
+      text-decoration:none;
+      color: #0b0e2a;
+      font-weight: 950;
+      letter-spacing: .8px;
+      text-transform: uppercase;
+      border: 1px solid rgba(255,255,255,.18);
+      background: linear-gradient(135deg, rgba(255,210,74,.95), rgba(52,211,255,.85));
+      box-shadow: 0 24px 90px rgba(255,210,74,.18), 0 18px 70px rgba(52,211,255,.12);
+      transition: transform .10s ease, filter .18s ease;
+    }
+    .mega:hover{ transform: translateY(-1px); filter: brightness(1.03); }
+
+    .mini{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .mini a, .mini button{
+      flex: 1 1 170px;
+      justify-content:center;
+    }
+
+    .foot{
+      margin-top: 14px;
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:space-between;
+      color: var(--muted2);
+      font-size: 12.5px;
+    }
+
+    .toast{
+      position:fixed;
+      left:50%;
+      bottom:18px;
+      transform:translateX(-50%);
+      background: rgba(0,0,0,.60);
+      border:1px solid rgba(255,255,255,.18);
+      border-radius:999px;
+      padding:10px 14px;
+      color:rgba(255,255,255,.92);
+      font-size:13px;
+      box-shadow: 0 22px 80px rgba(0,0,0,.65);
+      backdrop-filter: blur(12px);
+      opacity:0;
+      pointer-events:none;
+      transition:opacity .18s ease, transform .18s ease;
+      z-index: 99;
+    }
+    .toast.show{
+      opacity:1;
+      transform:translateX(-50%) translateY(-2px);
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="brand">
+        <div class="sigil">PS</div>
+        <div>
+          <h1>Bacheca Pianeta Segreto</h1>
+          <p>Ultimo messaggio di <b>Luna Vallyy</b>. Testo pulito e pronto anche per Discord.</p>
+        </div>
+      </div>
+
+      <div class="actions">
+        <a class="btn" href="index.html" title="Torna alla Ruota">⟵ Ruota</a>
+        <button class="btn primary" id="copyBtn" type="button">Copia Discord</button>
+        <a class="btn gold" id="openLink" href="#" target="_blank" rel="noopener">Apri Link Post</a>
+      </div>
+    </div>
+
+    <div class="grid">
+      <!-- POST CARD -->
+      <div class="card">
+        <div class="card-inner">
+          <div class="meta">
+            <div>
+              <h2 class="title" id="postTitle">Caricamento...</h2>
+              <div class="subtitle" id="postSub">Attendo il responso dal Pianeta Segreto.</div>
+
+              <div class="chips" id="chips" style="display:none">
+                <span class="chip" id="chipMode"><strong>MODE</strong>: -</span>
+                <span class="chip" id="chipAt"><strong>PUBBLICATO</strong>: -</span>
+                <span class="chip" id="chipTag"><strong>TAG</strong>: -</span>
+              </div>
+            </div>
+
+            <div class="status" id="status">
+              <span class="dot" id="dot"></span>
+              <span id="statusText">LIVE</span>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="box">
+            <div class="loading" id="loading">Caricamento...</div>
+
+            <pre class="text" id="postText" style="display:none"></pre>
+
+            <img id="postImage" class="media" alt="Immagine Pianeta Segreto" />
+
+            <div id="videoWrap" class="video-wrap">
+              <iframe
+                id="ytFrame"
+                src=""
+                title="Video Pianeta Segreto"
+                frameborder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowfullscreen></iframe>
+            </div>
+          </div>
+
+          <div class="foot">
+            <div id="footLeft">Nessun post ancora.</div>
+            <div id="footRight">Suggerimento: Ruota → ADMIN → POST SPOT / POST BACHECA.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SIDE PANEL -->
+      <div class="side">
+        <div class="panel">
+          <h3>Portale dell'Oracolo</h3>
+          <p>
+            Qui appare l'ultimo messaggio pubblicato dal Pianeta Segreto.
+            Puoi aprire l'oroscopo e copiare il testo in un click.
+          </p>
+
+          <div class="cta">
+            <a class="mega" href="https://alexcaos75.github.io/oroscopo/" target="_blank" rel="noopener">
+              Oroscopo di Luna - Oracolo di Pianeta Segreto
+            </a>
+
+            <div class="mini">
+              <a class="btn" href="https://alexcaos75.github.io/oroscopo/" target="_blank" rel="noopener">Apri Oroscopo</a>
+              <a class="btn" href="index.html">Apri Ruota</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h3>Nota</h3>
+          <p>
+            Immagini: usa un percorso tipo <b>immagini/spot1.jpg</b> nella stessa repo.<br>
+            YouTube: salva solo l'<b>ID</b> (es: dQw4w9WgXcQ).<br>
+            Tutto viene mostrato senza caratteri strani.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">Copiato.</div>
+
+  <script type="module">
+    // ==========================
+    // Firebase (stesso progetto della Ruota)
+    // ==========================
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAwvbPE9ERhPsguZGqBK1ZCA1LBWUDDDTw",
+      authDomain: "ruota-lunare-2026.firebaseapp.com",
+      projectId: "ruota-lunare-2026",
+      storageBucket: "ruota-lunare-2026.firebasestorage.app",
+      messagingSenderId: "30667953656",
+      appId: "1:30667953656:web:3bd55af9bbf2ce8b8fb20d",
+      databaseURL: "https://ruota-lunare-2026-default-rtdb.europe-west1.firebasedatabase.app"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const BACHECA_LATEST = "ruota-lunare/bacheca/latest";
+
+    // ==========================
+    // UI refs
+    // ==========================
+    const postTitle = document.getElementById("postTitle");
+    const postSub   = document.getElementById("postSub");
+    const postText  = document.getElementById("postText");
+    const loading   = document.getElementById("loading");
+
+    const copyBtn   = document.getElementById("copyBtn");
+    const openLink  = document.getElementById("openLink");
+
+    const chips     = document.getElementById("chips");
+    const chipMode  = document.getElementById("chipMode");
+    const chipAt    = document.getElementById("chipAt");
+    const chipTag   = document.getElementById("chipTag");
+
+    const imgEl     = document.getElementById("postImage");
+    const videoWrap = document.getElementById("videoWrap");
+    const ytFrame   = document.getElementById("ytFrame");
+
+    const statusText = document.getElementById("statusText");
+    const dot       = document.getElementById("dot");
+    const footLeft  = document.getElementById("footLeft");
+    const footRight = document.getElementById("footRight");
+
+    const toast     = document.getElementById("toast");
+
+    let latestPayload = null;
+
+    function toastShow(msg){
+      toast.textContent = msg;
+      toast.classList.add("show");
+      setTimeout(()=>toast.classList.remove("show"), 1400);
+    }
+
+    function safeTime(ts){
+      try{
+        const d = new Date(ts);
+        return d.toLocaleString("it-IT", {
+          year:"numeric", month:"2-digit", day:"2-digit",
+          hour:"2-digit", minute:"2-digit"
+        });
+      }catch{
+        return "-";
+      }
+    }
+
+    function isValidYouTubeId(id){
+      return typeof id === "string" && /^[a-zA-Z0-9_-]{6,20}$/.test(id);
+    }
+
+    // ✅ UI-safe: evita caratteri strani in visualizzazione
+    function sanitizePlainASCII(input) {
+      let s = String(input ?? "");
+      try { s = s.normalize("NFD").replace(/[\u0300-\u036f]/g, ""); } catch {}
+      s = s.replace(/[“”]/g, '"').replace(/[‘’]/g, "'");
+      s = s.replace(/[^\x09\x0A\x0D\x20-\x7E]/g, " ");
+      s = s.replace(/\?{2,}/g, "?");
+      s = s.replace(/[ \t]+/g, " ");
+      s = s.replace(/\n{3,}/g, "\n\n");
+      return s.trim();
+    }
+
+    function render(payload){
+      latestPayload = payload || {};
+
+      loading.style.display = "none";
+      postText.style.display = "block";
+      chips.style.display = "flex";
+
+      const title    = payload?.title || sanitizePlainASCII(`${payload?.author || "Luna Vallyy"} - ${payload?.oracle || "Oracolo di Pianeta Segreto"}`);
+      const subtitle = payload?.subtitle || "Ultimo messaggio dal Pianeta Segreto.";
+      const text     = payload?.text || "Nessun post ancora.";
+      const link     = payload?.link || "index.html";
+
+      const mode = sanitizePlainASCII(payload?.mode || "POST");
+      const tag  = sanitizePlainASCII(payload?.tag  || "Pianeta Segreto");
+      const at   = payload?.at || 0;
+
+      postTitle.textContent = sanitizePlainASCII(title);
+      postSub.textContent   = sanitizePlainASCII(subtitle);
+      postText.textContent  = sanitizePlainASCII(text);
+
+      chipMode.textContent = `MODE: ${mode || "-"}`;
+      chipAt.textContent   = `PUBBLICATO: ${at ? safeTime(at) : "-"}`;
+      chipTag.textContent  = `TAG: ${tag || "-"}`;
+
+      openLink.href = link;
+
+      footLeft.textContent  = (mode === "SPOT")
+        ? "SPOT: messaggio ufficiale del Pianeta Segreto."
+        : "Ultimo post disponibile.";
+
+      footRight.textContent = "Ruota → ADMIN → POST SPOT / POST BACHECA.";
+
+      // immagine opzionale
+      imgEl.style.display = "none";
+      imgEl.removeAttribute("src");
+      if (payload?.image && typeof payload.image === "string" && payload.image.trim()){
+        imgEl.src = payload.image.trim();
+        imgEl.style.display = "block";
+      }
+
+      // video opzionale (solo ID)
+      videoWrap.style.display = "none";
+      ytFrame.src = "";
+      if (payload?.video && isValidYouTubeId(payload.video)){
+        ytFrame.src = "https://www.youtube.com/embed/" + payload.video + "?rel=0";
+        videoWrap.style.display = "block";
+      }
+
+      statusText.textContent = "LIVE";
+      dot.style.background = "rgba(52,211,255,.95)";
+    }
+
+    function renderEmpty(){
+      latestPayload = null;
+
+      loading.style.display = "none";
+      postText.style.display = "block";
+      postText.textContent =
+        "Nessun post ancora.\n\n" +
+        "Apri la Ruota, entra in ADMIN e premi:\n" +
+        "- POST SPOT (messaggio ufficiale)\n" +
+        "- POST BACHECA (post oroscopo)\n";
+
+      postTitle.textContent = "Bacheca Pianeta Segreto";
+      postSub.textContent   = "In attesa del primo messaggio.";
+      chips.style.display   = "none";
+
+      openLink.href = "index.html";
+
+      imgEl.style.display = "none";
+      videoWrap.style.display = "none";
+
+      statusText.textContent = "VUOTO";
+      dot.style.background = "rgba(255,210,74,.95)";
+
+      footLeft.textContent = "Nessun post ancora.";
+    }
+
+    // copy Discord (copiamo il testo già safe)
+    copyBtn.addEventListener("click", async () => {
+      const t = latestPayload?.text || "";
+      if (!String(t).trim()){
+        toastShow("Niente da copiare");
+        return;
+      }
+
+      const safe = sanitizePlainASCII(t);
+
+      try{
+        await navigator.clipboard.writeText(safe);
+        toastShow("Copiato");
+      }catch{
+        const ta = document.createElement("textarea");
+        ta.value = safe;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+        toastShow("Copiato");
+      }
+    });
+
+    // LIVE listener
+    onValue(ref(db, BACHECA_LATEST), (snap) => {
+      if (!snap.exists()){
+        renderEmpty();
+        return;
+      }
+      render(snap.val());
+    }, (err) => {
+      console.warn("Bacheca read error:", err);
+      renderEmpty();
+      statusText.textContent = "OFF";
+      dot.style.background = "rgba(255,79,216,.95)";
+    });
+  </script>
+</body>
+</html>
