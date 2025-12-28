@@ -8,142 +8,181 @@
 
   <style>
     :root{
-      --bg0:#020214;
+      --bg0:#030416;
       --bg1:#07072a;
-      --glass: rgba(255,255,255,.08);
-      --stroke: rgba(255,255,255,.18);
-      --txt: rgba(255,255,255,.95);
-      --muted: rgba(255,255,255,.75);
+      --glass: rgba(255,255,255,.07);
+      --stroke: rgba(255,255,255,.16);
+      --txt: rgba(255,255,255,.94);
+      --muted: rgba(255,255,255,.72);
       --muted2: rgba(255,255,255,.55);
-      --shadow: 0 30px 120px rgba(0,0,0,.70);
-      --shadow2: 0 14px 55px rgba(0,0,0,.55);
-      --r: 26px;
-      --r2: 18px;
+      --shadow: 0 22px 90px rgba(0,0,0,.62);
+      --shadow2: 0 10px 42px rgba(0,0,0,.45);
+      --r: 22px;
+      --r2: 16px;
       --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
       --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     }
+
     *{ box-sizing:border-box; }
     html,body{ height:100%; }
     body{
-      margin:0; font-family:var(--sans); color:var(--txt);
+      margin:0;
+      font-family:var(--sans);
+      color:var(--txt);
       background:
-        radial-gradient(1200px 800px at 18% 16%, rgba(190,70,255,.34), transparent 58%),
-        radial-gradient(1100px 760px at 84% 20%, rgba(20,240,255,.26), transparent 58%),
-        radial-gradient(900px 700px at 55% 92%, rgba(255,80,210,.18), transparent 58%),
+        radial-gradient(1200px 800px at 18% 18%, rgba(170,80,255,.26), transparent 58%),
+        radial-gradient(1100px 760px at 85% 22%, rgba(40,220,255,.20), transparent 58%),
+        radial-gradient(900px 700px at 55% 92%, rgba(255,80,210,.14), transparent 58%),
         linear-gradient(180deg, var(--bg1), var(--bg0));
       overflow-x:hidden;
     }
     body:before{
-      content:""; position:fixed; inset:0; pointer-events:none;
+      content:"";
+      position:fixed; inset:0;
+      pointer-events:none;
       background-image:
-        radial-gradient(1px 1px at 12% 28%, rgba(255,255,255,.40), transparent 45%),
-        radial-gradient(1px 1px at 26% 70%, rgba(255,255,255,.24), transparent 45%),
-        radial-gradient(1px 1px at 52% 18%, rgba(255,255,255,.22), transparent 45%),
-        radial-gradient(1px 1px at 76% 46%, rgba(255,255,255,.30), transparent 45%),
-        radial-gradient(1px 1px at 90% 84%, rgba(255,255,255,.22), transparent 45%);
-      opacity:.95; mix-blend-mode:screen;
+        radial-gradient(1px 1px at 12% 28%, rgba(255,255,255,.36), transparent 45%),
+        radial-gradient(1px 1px at 26% 70%, rgba(255,255,255,.22), transparent 45%),
+        radial-gradient(1px 1px at 52% 18%, rgba(255,255,255,.18), transparent 45%),
+        radial-gradient(1px 1px at 76% 46%, rgba(255,255,255,.26), transparent 45%),
+        radial-gradient(1px 1px at 90% 84%, rgba(255,255,255,.20), transparent 45%);
+      opacity:.92;
+      mix-blend-mode:screen;
     }
 
-    .wrap{ max-width:1020px; margin:0 auto; padding:26px 16px 50px; }
-    .topbar{ display:flex; gap:12px; align-items:center; justify-content:space-between; margin:10px 0 18px; flex-wrap:wrap; }
+    .wrap{ max-width: 1020px; margin: 0 auto; padding: 26px 16px 50px; }
 
+    .topbar{
+      display:flex; gap:12px; align-items:center; justify-content:space-between;
+      margin: 10px 0 18px; flex-wrap:wrap;
+    }
     .brand{ display:flex; align-items:center; gap:12px; user-select:none; min-width:260px; }
     .sigil{
-      width:52px;height:52px; border-radius:18px;
+      width:48px;height:48px;border-radius:16px;
       background:
-        radial-gradient(circle at 28% 28%, rgba(255,255,255,.30), transparent 58%),
-        linear-gradient(135deg, rgba(255,90,220,.70), rgba(60,220,255,.40));
-      border:1px solid rgba(255,255,255,.22);
-      box-shadow: 0 18px 80px rgba(120,120,255,.28);
-      display:grid; place-items:center; font-weight:1000; letter-spacing:.7px;
+        radial-gradient(circle at 28% 28%, rgba(255,255,255,.28), transparent 58%),
+        linear-gradient(135deg, rgba(180,80,255,.78), rgba(40,230,255,.42));
+      border:1px solid rgba(255,255,255,.20);
+      box-shadow: 0 18px 70px rgba(110,120,255,.24);
+      display:grid; place-items:center;
+      font-weight:900; letter-spacing:.6px;
     }
-    .brand h1{ margin:0; font-size:20px; letter-spacing:.2px; line-height:1.15; }
-    .brand p{ margin:6px 0 0; font-size:13px; color:var(--muted2); max-width:560px; }
+    .brand h1{ margin:0; font-size:20px; line-height:1.15; }
+    .brand p{ margin:6px 0 0; font-size:13px; color:var(--muted2); max-width:520px; }
 
     .actions{ display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
 
     .btn{
-      appearance:none; border:1px solid rgba(255,255,255,.18);
-      background: rgba(255,255,255,.08); color:var(--txt);
-      padding:11px 16px; border-radius:999px; cursor:pointer;
-      font-weight:950; font-size:13px; letter-spacing:.35px;
-      transition:transform .12s ease, background .18s ease, border-color .18s ease, box-shadow .18s ease;
-      display:inline-flex; align-items:center; gap:10px;
-      box-shadow: 0 14px 40px rgba(0,0,0,.28);
+      appearance:none;
+      border:1px solid rgba(255,255,255,.18);
+      background: rgba(255,255,255,.07);
+      color:var(--txt);
+      padding:10px 14px;
+      border-radius:999px;
+      cursor:pointer;
+      font-weight:900;
+      font-size:13px;
+      letter-spacing:.35px;
+      transition:transform .10s ease, background .18s ease, border-color .18s ease, box-shadow .18s ease;
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      box-shadow: 0 12px 34px rgba(0,0,0,.25);
       text-decoration:none;
+      user-select:none;
     }
     .btn:hover{
-      background: rgba(255,255,255,.14); border-color: rgba(255,255,255,.32);
-      transform: translateY(-1px); box-shadow: 0 18px 55px rgba(0,0,0,.36);
+      background: rgba(255,255,255,.12);
+      border-color: rgba(255,255,255,.30);
+      transform: translateY(-1px);
+      box-shadow: 0 16px 44px rgba(0,0,0,.32);
     }
     .btn.primary{
-      background: linear-gradient(135deg, rgba(255,90,220,.55), rgba(80,160,255,.40));
+      background: linear-gradient(135deg, rgba(180,80,255,.74), rgba(40,230,255,.34));
       border-color: rgba(255,255,255,.26);
     }
     .btn.oracolo{
-      background: linear-gradient(135deg, rgba(255,170,80,.42), rgba(255,90,220,.40), rgba(60,220,255,.32));
-      border-color: rgba(255,255,255,.26);
+      background: linear-gradient(135deg, rgba(255,120,220,.40), rgba(120,120,255,.38));
+      border-color: rgba(255,255,255,.22);
+    }
+    .btn.listen{
+      background: linear-gradient(135deg, rgba(80,220,255,.38), rgba(180,80,255,.40));
+      border-color: rgba(255,255,255,.22);
+    }
+    .btn.stop{
+      background: rgba(255,255,255,.08);
+      border-color: rgba(255,255,255,.18);
     }
 
     .card{
-      background: linear-gradient(180deg, rgba(255,255,255,.09), rgba(255,255,255,.05));
-      border:1px solid rgba(255,255,255,.18);
+      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.05));
+      border:1px solid rgba(255,255,255,.16);
       border-radius: var(--r);
       box-shadow: var(--shadow);
-      overflow:hidden; position:relative;
+      overflow:hidden;
+      position:relative;
     }
     .card:before{
-      content:""; position:absolute; inset:-2px; pointer-events:none;
+      content:"";
+      position:absolute; inset:-2px;
       background:
-        radial-gradient(800px 360px at 10% 0%, rgba(255,90,220,.30), transparent 60%),
-        radial-gradient(980px 380px at 95% 28%, rgba(60,220,255,.24), transparent 60%),
-        radial-gradient(820px 360px at 50% 105%, rgba(255,170,80,.18), transparent 60%);
-      opacity:1; mix-blend-mode:screen;
+        radial-gradient(700px 320px at 10% 0%, rgba(180,80,255,.28), transparent 60%),
+        radial-gradient(850px 340px at 95% 28%, rgba(40,230,255,.22), transparent 60%),
+        radial-gradient(700px 320px at 50% 105%, rgba(255,80,210,.16), transparent 60%);
+      pointer-events:none;
+      opacity:1;
+      mix-blend-mode:screen;
     }
     .inner{ position:relative; padding:18px; }
 
-    .meta{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:10px; }
+    .meta{
+      display:flex; align-items:flex-start; justify-content:space-between;
+      gap:12px; margin-bottom:10px;
+    }
     .title{ margin:0; font-size:18px; font-weight:1000; letter-spacing:.2px; }
     .subtitle{ margin:8px 0 0; color:var(--muted); font-size:13px; line-height:1.4; }
 
     .chips{ display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
     .chip{
-      font-size:12px; color: rgba(255,255,255,.90);
-      border:1px solid rgba(255,255,255,.18);
+      font-size:12px; color: rgba(255,255,255,.88);
+      border:1px solid rgba(255,255,255,.16);
       background: rgba(0,0,0,.18);
-      padding:6px 10px; border-radius:999px;
-      backdrop-filter: blur(10px);
+      padding:6px 10px;
+      border-radius: 999px;
+      backdrop-filter: blur(8px);
     }
 
-    .divider{ height:1px; background: rgba(255,255,255,.14); margin:14px 0 14px; }
+    .divider{ height:1px; background: rgba(255,255,255,.14); margin:14px 0; }
 
     .box{
       background: rgba(0,0,0,.22);
-      border:1px solid rgba(255,255,255,.16);
+      border:1px solid rgba(255,255,255,.14);
       border-radius: var(--r2);
       padding:14px;
       box-shadow: var(--shadow2);
-      backdrop-filter: blur(12px);
+      backdrop-filter: blur(10px);
     }
     pre.text{
       margin:0;
       white-space:pre-wrap;
       word-break:break-word;
       font-family:var(--mono);
-      font-size:13.7px;
-      line-height:1.6;
-      color: rgba(255,255,255,.94);
+      font-size:13.5px;
+      line-height:1.55;
+      color: rgba(255,255,255,.92);
     }
 
+    /* ✅ MEDIA “100%” senza tagli: niente max-height, niente crop.
+       L'immagine/gif scala in larghezza e mantiene proporzioni. */
     .media{
       width:100%;
-      max-height:520px;
-      object-fit:cover;
+      height:auto;
+      display:none;
       border-radius: var(--r2);
       margin-top:14px;
       border:1px solid rgba(255,255,255,.18);
       box-shadow: var(--shadow2);
-      display:none;
+      background: rgba(0,0,0,.18);
     }
 
     .video-wrap{
@@ -163,27 +202,44 @@
 
     .foot{
       margin-top:14px;
-      display:flex; gap:10px; flex-wrap:wrap;
-      align-items:center; justify-content:space-between;
-      color:var(--muted2); font-size:12.5px;
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:space-between;
+      color:var(--muted2);
+      font-size:12.5px;
     }
-
-    .status{ font-weight:1000; letter-spacing:.35px; font-size:12px; opacity:.9; }
+    .status{ font-weight:900; letter-spacing:.35px; font-size:12px; opacity:.9; }
 
     .toast{
-      position:fixed; left:50%; bottom:18px; transform:translateX(-50%);
-      background: rgba(0,0,0,.62);
+      position:fixed;
+      left:50%;
+      bottom:18px;
+      transform:translateX(-50%);
+      background: rgba(0,0,0,.58);
       border:1px solid rgba(255,255,255,.18);
       border-radius:999px;
       padding:10px 14px;
       color:rgba(255,255,255,.92);
-      font-size:13px; font-weight:950;
-      box-shadow: 0 20px 70px rgba(0,0,0,.62);
-      backdrop-filter: blur(14px);
-      opacity:0; pointer-events:none;
+      font-size:13px;
+      font-weight:900;
+      box-shadow: 0 20px 60px rgba(0,0,0,.58);
+      backdrop-filter: blur(12px);
+      opacity:0;
+      pointer-events:none;
       transition:opacity .18s ease, transform .18s ease;
     }
-    .toast.show{ opacity:1; transform:translateX(-50%) translateY(-2px); }
+    .toast.show{
+      opacity:1;
+      transform:translateX(-50%) translateY(-2px);
+    }
+
+    /* iframe audio invisibile */
+    #bgMusicFrame{
+      width:0;height:0;opacity:0;pointer-events:none;
+      position:fixed; left:-9999px; top:-9999px;
+    }
 
     @media (max-width:520px){
       .meta{ flex-direction:column; align-items:flex-start; }
@@ -206,6 +262,11 @@
       <div class="actions">
         <a class="btn" href="./index.html" title="Torna alla ruota">⟵ Ruota</a>
         <a class="btn oracolo" href="https://alexcaos75.github.io/oroscopo/" target="_blank" rel="noopener">Oroscopo di Luna</a>
+
+        <!-- ✅ AUDIO CONTROLS -->
+        <button class="btn listen" id="listenBtn" type="button">ASCOLTA</button>
+        <button class="btn stop" id="stopBtn" type="button">STOP</button>
+
         <button class="btn primary" id="copyBtn" type="button">Copia Discord</button>
         <a class="btn" id="openLink" href="#" target="_blank" rel="noopener">Apri link</a>
       </div>
@@ -231,7 +292,11 @@
 
         <div class="box">
           <pre class="text" id="postText">Caricamento…</pre>
+
+          <!-- ✅ GIF/IMG full width -->
           <img id="postImage" class="media" alt="Immagine Pianeta Segreto" />
+
+          <!-- ✅ video visibile (opzionale, se vuoi mostrarlo) -->
           <div id="videoWrap" class="video-wrap">
             <iframe id="ytFrame" src="" title="Video Pianeta Segreto"
               frameborder="0"
@@ -250,10 +315,16 @@
 
   <div class="toast" id="toast">Copiato.</div>
 
+  <!-- ✅ IFRAME AUDIO INVISIBILE (creato via JS quando premi ASCOLTA) -->
+  <iframe id="bgMusicFrame" src="" allow="autoplay; encrypted-media" frameborder="0"></iframe>
+
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
     import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-database.js";
 
+    // ==========================
+    // Firebase
+    // ==========================
     const firebaseConfig = {
       apiKey: "AIzaSyAwvbPE9ERhPsguZGqBK1ZCA1LBWUDDDTw",
       authDomain: "ruota-lunare-2026.firebaseapp.com",
@@ -266,8 +337,12 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
+
     const BACHECA_LATEST = "ruota-lunare/bacheca/latest";
 
+    // ==========================
+    // UI
+    // ==========================
     const postTitle = document.getElementById("postTitle");
     const postSub   = document.getElementById("postSub");
     const postText  = document.getElementById("postText");
@@ -285,7 +360,13 @@
     const imgEl     = document.getElementById("postImage");
     const videoWrap = document.getElementById("videoWrap");
     const ytFrame   = document.getElementById("ytFrame");
+
     const toast     = document.getElementById("toast");
+
+    // audio buttons
+    const listenBtn = document.getElementById("listenBtn");
+    const stopBtn   = document.getElementById("stopBtn");
+    const bgFrame   = document.getElementById("bgMusicFrame");
 
     let latestPayload = null;
 
@@ -306,12 +387,75 @@
       return typeof id === "string" && /^[a-zA-Z0-9_-]{6,20}$/.test(id);
     }
 
+    // ASCII safe (anti ??)
+    function sanitizePlainASCII(input){
+      let s = String(input ?? "");
+      try{ s = s.normalize("NFD").replace(/[\u0300-\u036f]/g, ""); }catch{}
+      s = s.replace(/[“”]/g, '"').replace(/[‘’]/g, "'");
+      s = s.replace(/[^\x09\x0A\x0D\x20-\x7E]/g, " ");
+      s = s.replace(/\?{2,}/g, "?");
+      s = s.replace(/[ \t]+/g, " ");
+      s = s.replace(/\n{3,}/g, "\n\n");
+      return s.trim();
+    }
+
+    // ==========================
+    // AUDIO: ASCOLTA / STOP
+    // - autoplay parte SOLO dopo click (permesso)
+    // - loop infinito
+    // - invisibile
+    // ==========================
+    function setAudioFromPayload(payload){
+      // payload.musicId (preferito) oppure payload.video (fallback)
+      const id = (payload && payload.musicId) ? payload.musicId : (payload && payload.video) ? payload.video : "";
+      const ok = isValidYouTubeId(id);
+
+      listenBtn.disabled = !ok;
+      stopBtn.disabled = !ok;
+
+      if (!ok){
+        stopAudio();
+      }
+      return ok ? id : "";
+    }
+
+    function playAudio(ytId){
+      if (!isValidYouTubeId(ytId)) return;
+
+      // autoplay+loop (playlist=ID serve al loop)
+      const src =
+        "https://www.youtube.com/embed/" + ytId +
+        "?autoplay=1&loop=1&playlist=" + ytId +
+        "&controls=0&rel=0&modestbranding=1";
+
+      bgFrame.src = src;
+      toastShow("Musica attiva");
+    }
+
+    function stopAudio(){
+      bgFrame.src = "";
+      toastShow("Musica stop");
+    }
+
+    listenBtn.addEventListener("click", () => {
+      const id = setAudioFromPayload(latestPayload || {});
+      if (!id) return toastShow("Nessuna musica nel post");
+      playAudio(id);
+    });
+
+    stopBtn.addEventListener("click", () => stopAudio());
+
+    // ==========================
+    // Render post
+    // ==========================
     function render(payload){
       latestPayload = payload || {};
 
-      const title  = payload?.title || "Luna Vallyy - Oracolo di Pianeta Segreto";
-      const sub    = payload?.subtitle || "Messaggio dal Pianeta Segreto. Pronto anche per Discord.";
-      const text   = payload?.text || "Nessun post ancora.";
+      const author = payload?.author || "Luna Vallyy";
+      const oracle = payload?.oracle || "Oracolo di Pianeta Segreto";
+      const title  = sanitizePlainASCII(payload?.title || `${author} - ${oracle}`);
+      const sub    = sanitizePlainASCII(payload?.subtitle || "Messaggio dal Pianeta Segreto. Pronto anche per Discord.");
+      const text   = sanitizePlainASCII(payload?.text || "Nessun post ancora.");
       const link   = payload?.link || "./index.html";
       const at     = payload?.at || 0;
       const mode   = payload?.mode || "POST";
@@ -320,16 +464,18 @@
       postTitle.textContent = title;
       postSub.textContent   = sub;
       postText.textContent  = text;
+
       openLink.href = link;
 
       chips.style.display = "flex";
       chipMode.textContent = `Modalita: ${mode}`;
-      chipAt.textContent   = at ? `Pubblicato: ${safeTime(at)}` : "Pubblicato: -";
+      chipAt.textContent   = at ? `Ultimo post: ${safeTime(at)}` : "Ultimo post: -";
       chipTag.textContent  = `Tag: ${tag}`;
 
       footLeft.textContent  = at ? `Ultimo post: ${safeTime(at)}` : "Ultimo post disponibile.";
       footRight.textContent = "Suggerimento: Ruota → ADMIN → POST SPOT.";
 
+      // ✅ GIF/IMG full width (niente crop)
       imgEl.style.display = "none";
       imgEl.removeAttribute("src");
       if (payload?.image && typeof payload.image === "string" && payload.image.trim()){
@@ -337,12 +483,17 @@
         imgEl.style.display = "block";
       }
 
+      // ✅ video visibile (se vuoi MOSTRARLO)
+      // Se preferisci audio invisibile soltanto, lascia videoWrap sempre nascosto:
       videoWrap.style.display = "none";
       ytFrame.src = "";
-      if (payload?.video && isValidYouTubeId(payload.video)){
+      if (payload?.showVideo === true && payload?.video && isValidYouTubeId(payload.video)){
         ytFrame.src = "https://www.youtube.com/embed/" + payload.video + "?rel=0";
         videoWrap.style.display = "block";
       }
+
+      // abilita bottoni audio se esiste un id musica
+      setAudioFromPayload(payload);
 
       statusEl.textContent = "LIVE";
     }
@@ -359,11 +510,18 @@
       statusEl.textContent = "VUOTO";
       footLeft.textContent = "Nessun post ancora.";
       footRight.textContent = "Suggerimento: Ruota → ADMIN → POST SPOT.";
+      listenBtn.disabled = true;
+      stopBtn.disabled = true;
+      stopAudio();
     }
 
+    // copy
     copyBtn.addEventListener("click", async () => {
       const t = latestPayload?.text || "";
-      if (!t.trim()){ toastShow("Niente da copiare"); return; }
+      if (!t.trim()){
+        toastShow("Niente da copiare");
+        return;
+      }
       try{
         await navigator.clipboard.writeText(t);
         toastShow("Copiato");
@@ -378,10 +536,15 @@
       }
     });
 
+    // LIVE listener
     onValue(ref(db, BACHECA_LATEST), (snap) => {
-      if (!snap.exists()) return renderEmpty();
+      if (!snap.exists()){
+        renderEmpty();
+        return;
+      }
       render(snap.val());
-    }, () => {
+    }, (err) => {
+      console.warn("Bacheca read error:", err);
       renderEmpty();
       statusEl.textContent = "OFF";
     });
