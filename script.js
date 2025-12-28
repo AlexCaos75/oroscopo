@@ -776,7 +776,7 @@ async function postNeutralToBacheca() {
 }
 
 // ==========================
-// 🧾 COPIA POST — genera HTML incollabile
+// 🧾 COPIA POST — genera HTML incollabile (ROBUSTO: NO <script>, NO id globali)
 // ==========================
 function escapeHtml(s){
   return String(s||"")
@@ -799,6 +799,7 @@ function buildPublishablePostHTML({ title, body, link, image, videoId, musicId, 
   const mus = (videoMode === "hidden") ? (musicId || videoId || "") : "";
 
   // HTML (single block) — bello e “universale”
+  // ✅ musica: NO <script>, NO funzioni globali, NO id fissi
   return `
 <div style="
   max-width:920px;
@@ -861,37 +862,42 @@ function buildPublishablePostHTML({ title, body, link, image, videoId, musicId, 
       </a>
 
       ${mus ? `
-      <button onclick="psPlayMusic()" style="
-        padding:12px 16px;border-radius:999px;
-        font-weight:950;font-size:13px;letter-spacing:.35px;
-        color:white;cursor:pointer;
-        background:linear-gradient(135deg, rgba(255,120,220,.40), rgba(120,120,255,.38));
-        border:1px solid rgba(255,255,255,.18);
-        box-shadow:0 18px 56px rgba(0,0,0,.35);
-      ">ASCOLTA</button>
+      <span data-psmusic style="position:relative; display:inline-flex; gap:10px; flex-wrap:wrap; align-items:center;">
+        <button onclick="(function(btn){
+          try{
+            var wrap = btn.closest('[data-psmusic]');
+            var fr = wrap && wrap.querySelector('iframe');
+            if(!fr) return;
+            fr.src = 'https://www.youtube.com/embed/${escapeHtml(mus)}?autoplay=1&loop=1&playlist=${escapeHtml(mus)}&controls=0&rel=0&modestbranding=1';
+          }catch(e){}
+        })(this);" style="
+          padding:12px 16px;border-radius:999px;
+          font-weight:950;font-size:13px;letter-spacing:.35px;
+          color:white;cursor:pointer;
+          background:linear-gradient(135deg, rgba(255,120,220,.40), rgba(120,120,255,.38));
+          border:1px solid rgba(255,255,255,.18);
+          box-shadow:0 18px 56px rgba(0,0,0,.35);
+        ">ASCOLTA</button>
 
-      <button onclick="psStopMusic()" style="
-        padding:12px 16px;border-radius:999px;
-        font-weight:950;font-size:13px;letter-spacing:.35px;
-        color:white;cursor:pointer;
-        background:rgba(255,255,255,.10);
-        border:1px solid rgba(255,255,255,.18);
-      ">STOP</button>
+        <button onclick="(function(btn){
+          try{
+            var wrap = btn.closest('[data-psmusic]');
+            var fr = wrap && wrap.querySelector('iframe');
+            if(!fr) return;
+            fr.src = 'about:blank';
+          }catch(e){}
+        })(this);" style="
+          padding:12px 16px;border-radius:999px;
+          font-weight:950;font-size:13px;letter-spacing:.35px;
+          color:white;cursor:pointer;
+          background:rgba(255,255,255,.10);
+          border:1px solid rgba(255,255,255,.18);
+        ">STOP</button>
 
-      <iframe id="psMusicFrame" src="about:blank"
-        style="width:0;height:0;border:0;position:absolute;left:-9999px;top:-9999px;"
-        allow="autoplay"></iframe>
-
-      <script>
-        function psPlayMusic(){
-          // autoplay audio: parte SOLO dopo click (permesso dai browser)
-          document.getElementById('psMusicFrame').src =
-            "https://www.youtube.com/embed/${mus}?autoplay=1&loop=1&playlist=${mus}&controls=0&rel=0&modestbranding=1";
-        }
-        function psStopMusic(){
-          document.getElementById('psMusicFrame').src = "about:blank";
-        }
-      </script>
+        <iframe src="about:blank"
+          style="width:0;height:0;border:0;position:absolute;left:-9999px;top:-9999px;"
+          allow="autoplay; encrypted-media"></iframe>
+      </span>
       ` : ``}
     </div>
   </div>
@@ -906,8 +912,9 @@ function buildPublishablePostHTML({ title, body, link, image, videoId, musicId, 
   ${vid ? `
   <div style="padding:16px;background:rgba(0,0,0,.25);border-top:1px solid rgba(255,255,255,.10);">
     <iframe
-      src="https://www.youtube.com/embed/${vid}?rel=0&modestbranding=1"
+      src="https://www.youtube.com/embed/${escapeHtml(vid)}?rel=0&modestbranding=1"
       style="width:100%;aspect-ratio:16/9;border-radius:18px;border:1px solid rgba(255,255,255,.14);"
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
       allowfullscreen></iframe>
   </div>
   ` : ``}
@@ -1071,3 +1078,4 @@ async function init() {
   window.LUNA.migrateTodayToRichFormat = migrateTodayToRichFormat;
   window.LUNA.ensureDailyOroscopoUpToDate = ensureDailyOroscopoUpToDate;
 }
+
