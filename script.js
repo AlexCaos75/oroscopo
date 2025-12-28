@@ -1,5 +1,5 @@
 // ==========================
-// 🔥 RUOTA LUNARE 2026 — SCRIPT CAPOLAVORO
+// 🔥 RUOTA LUNARE 2026 — SCRIPT CAPOLAVORO (FULL)
 // ✅ daily listener con off()
 // ✅ fallback giorno locale
 // ✅ admin salva sul daily corrente
@@ -9,7 +9,7 @@
 // ✅ resync dopo mezzanotte
 // ✅ supporta OROSCOPO RICCO: stringa OR oggetto {testo, amore, lavoro, fortuna, consiglio}
 // ✅ MIGRAZIONE: window.LUNA.migrateTodayToRichFormat()
-// ✅ POST: Bacheca Pianeta Segreto + Copia Discord (testo pulito, no accenti/emoji/virgolette strane)
+// ✅ POST: Bacheca Pianeta Segreto + Copia Discord (testo pulito ASCII)
 // ==========================
 
 const DEBUG = true;
@@ -43,7 +43,7 @@ const appFB = initializeApp(firebaseConfig);
 const db = getDatabase(appFB);
 
 // ==========================
-// 🌐 DEBUG / GLOBAL
+// 🌐 GLOBAL / DEBUG
 // ==========================
 window.LUNA = window.LUNA || {};
 window.LUNA.db = db;
@@ -65,7 +65,7 @@ const ORO_CURRENT_PATH = "ruota-lunare/oroscopiCurrent";      // fallback
 const ORO_CURRENT_STR  = "ruota-lunare/oroscopiCurrentDate";  // primario
 const ORO_DAILY_BASE   = "ruota-lunare/oroscopiDaily";
 
-// ✅ BACHECA PIANETA SEGRETO (ultimo post)
+// ✅ BACHECA PIANETA SEGRETO
 const BACHECA_LATEST   = "ruota-lunare/bacheca/latest";
 
 // ==========================
@@ -79,14 +79,14 @@ let CURRENT_DAY = null;
 
 const SIGNS = [
   { name:"Ariete", img:"p01.png", lore:"Inizio, energia", hint:"Coraggio" },
-  { name:"Toro", img:"p02.png", lore:"Stabilità", hint:"Determinazione" },
-  { name:"Gemelli", img:"p03.png", lore:"Comunicazione", hint:"Flessibilità" },
+  { name:"Toro", img:"p02.png", lore:"Stabilita", hint:"Determinazione" },
+  { name:"Gemelli", img:"p03.png", lore:"Comunicazione", hint:"Flessibilita" },
   { name:"Cancro", img:"p04.png", lore:"Emozione", hint:"Cura" },
   { name:"Leone", img:"p05.png", lore:"Leadership", hint:"Potere" },
   { name:"Vergine", img:"p06.png", lore:"Precisione", hint:"Ordine" },
   { name:"Bilancia", img:"p07.png", lore:"Equilibrio", hint:"Giustizia" },
   { name:"Scorpione", img:"p08.png", lore:"Mistero", hint:"Trasformazione" },
-  { name:"Sagittario", img:"p09.png", lore:"Avventura", hint:"Verità" },
+  { name:"Sagittario", img:"p09.png", lore:"Avventura", hint:"Verita" },
   { name:"Capricorno", img:"p10.png", lore:"Disciplina", hint:"Struttura" },
   { name:"Acquario", img:"p11.png", lore:"Visione", hint:"Rivoluzione" },
   { name:"Pesci", img:"p12.png", lore:"Sogno", hint:"Intuizione" }
@@ -109,14 +109,39 @@ function localDayKey() {
 
 function parseCurrentDayFromDb(v) {
   if (typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v)) return v;
-  if (v && typeof v === "object" && typeof v.date === "string") {
-    if (/^\d{4}-\d{2}-\d{2}$/.test(v.date)) return v.date;
-  }
+  if (v && typeof v === "object" && typeof v.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v.date)) return v.date;
   return null;
 }
 
 // ==========================
-// 🌟 DEFAULT OROSCOPO RICCO
+// 🧼 SANITIZER ASCII (NO STRANI / DISCORD SAFE)
+// ==========================
+function sanitizePlainASCII(input) {
+  let s = String(input ?? "");
+
+  // normalizza e rimuove accenti
+  try {
+    s = s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  } catch {}
+
+  // smart quotes -> normali
+  s = s.replace(/[“”]/g, '"').replace(/[‘’]/g, "'");
+
+  // rimuove tutto non-ASCII stampabile (teniamo newline/tab)
+  s = s.replace(/[^\x09\x0A\x0D\x20-\x7E]/g, " ");
+
+  // pulizia
+  s = s.replace(/\?{2,}/g, "?");
+  s = s.replace(/"{2,}/g, '"');
+  s = s.replace(/'{2,}/g, "'");
+  s = s.replace(/[ \t]+/g, " ");
+  s = s.replace(/\n{3,}/g, "\n\n");
+
+  return s.trim();
+}
+
+// ==========================
+// 🌟 DEFAULT OROSCOPO RICCO (ASCII safe)
 // ==========================
 function buildDefaultDailyPayload() {
   const base = {
@@ -210,37 +235,11 @@ function buildDefaultDailyPayload() {
 }
 
 // ==========================
-// 🧼 SANITIZER “NO STRANI” (Discord safe)
+// 🧩 FORMAT OUTPUT (stringa o oggetto)
 // ==========================
-function sanitizePlainASCII(input) {
-  let s = String(input ?? "");
-
-  // normalizza e rimuove diacritici (accenti)
-  s = s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-
-  // virgolette “smart” -> normali
-  s = s
-    .replace(/[“”]/g, '"')
-    .replace(/[‘’]/g, "'");
-
-  // rimuove tutto ciò che non è ASCII stampabile + newline
-  s = s.replace(/[^\x09\x0A\x0D\x20-\x7E]/g, " ");
-
-  // evita doppi ?? e spazi strani
-  s = s.replace(/\?{2,}/g, "?");
-  s = s.replace(/"{2,}/g, '"');
-  s = s.replace(/'{2,}/g, "'");
-  s = s.replace(/[ \t]+/g, " ");
-  s = s.replace(/\n{3,}/g, "\n\n");
-
-  return s.trim();
-}
-
 function formatHoroscopeForOutput(signName, value) {
-  // value può essere stringa o oggetto ricco
-  if (typeof value === "string") {
-    return value;
-  }
+  if (typeof value === "string") return value;
+
   if (value && typeof value === "object") {
     const parts = [];
     if (value.testo) parts.push(value.testo);
@@ -249,15 +248,17 @@ function formatHoroscopeForOutput(signName, value) {
     parts.push(`Lavoro: ${value.lavoro || "-"}`);
     parts.push(`Fortuna: ${value.fortuna || "-"}`);
     parts.push(`Consiglio: ${value.consiglio || "-"}`);
-    return parts.join("\n");
+    return parts.join("\n").trim();
   }
+
   return `Oroscopo non disponibile per ${signName}.`;
 }
 
+// ==========================
+// 🔗 LINK BASE (index.html nella stessa cartella)
+// ==========================
 function getBaseLink() {
-  // link pulito senza query
   const { origin, pathname } = window.location;
-  // pathname tipo /OROSCOPO/index.html
   const baseDir = pathname.replace(/\/[^/]*$/, "/");
   return origin + baseDir + "index.html";
 }
@@ -280,6 +281,7 @@ async function ensureDailyOroscopoUpToDate() {
     return;
   }
 
+  // lock globale (anti-spam multi-client)
   const lockRef = ref(db, `ruota-lunare/meta/dailyInitLock/${today}`);
   await runTransaction(lockRef, (cur) => {
     if (cur && cur.locked) return;
@@ -294,6 +296,7 @@ async function ensureDailyOroscopoUpToDate() {
     await set(dailyRefToday, def);
     if (DEBUG) console.log("[ORO] created missing daily for", today);
   } else {
+    // patch: non sovrascrive admin, completa solo mancanti
     const cur = snapDaily.val() || {};
     const patch = {};
 
@@ -309,11 +312,10 @@ async function ensureDailyOroscopoUpToDate() {
         const src = cur[sign];
         const dst = def[sign];
         for (const k of ["testo","amore","lavoro","fortuna","consiglio"]) {
-          if (src[k] == null || src[k] === "") {
-            patch[`${sign}/${k}`] = dst[k];
-          }
+          if (src[k] == null || src[k] === "") patch[`${sign}/${k}`] = dst[k];
         }
       }
+      // se e' stringa: la lasciamo (compat) e non la convertiamo automaticamente
     }
 
     if (Object.keys(patch).length > 0) {
@@ -325,11 +327,28 @@ async function ensureDailyOroscopoUpToDate() {
     }
   }
 
+  // current day pointers
   await set(ref(db, ORO_CURRENT_STR), today);
   await set(ref(db, ORO_CURRENT_PATH), { date: today, updatedAt: Date.now() });
 
   localStorage.setItem(key, "1");
   if (DEBUG) console.log("[ORO] daily init done, current set to", today);
+}
+
+// ==========================
+// 🌙 RESYNC DOPO MEZZANOTTE
+// ==========================
+function scheduleMidnightResync() {
+  const now = new Date();
+  const next = new Date(now);
+  next.setHours(24, 0, 5, 0); // 00:00:05
+  const ms = next.getTime() - now.getTime();
+
+  setTimeout(() => {
+    if (DEBUG) console.log("[ORO] midnight resync...");
+    ensureDailyOroscopoUpToDate().catch(e => console.warn("[ORO] midnight ensure error:", e));
+    scheduleMidnightResync();
+  }, ms);
 }
 
 // ==========================
@@ -364,7 +383,7 @@ async function migrateTodayToRichFormat() {
     if (typeof v === "string") {
       const d = def[sign];
       patch[sign] = {
-        testo: v,
+        testo: v, // mantiene il testo esistente
         amore: d.amore,
         lavoro: d.lavoro,
         fortuna: d.fortuna,
@@ -390,38 +409,35 @@ async function migrateTodayToRichFormat() {
 }
 
 // ==========================
-// 🧾 POST BACHECA + DISCORD
+// 🧾 POST BACHECA + COPIA DISCORD
 // ==========================
 async function postOroscopoToBacheca(signName) {
   if (!isAdmin) return alert("Solo ADMIN puo postare in bacheca.");
   if (!CURRENT_DAY) return alert("CURRENT_DAY non disponibile.");
 
   const day = CURRENT_DAY;
+
   const author = sanitizePlainASCII(window.LUNA.user || "Luna Vallyy");
   const oracle = "Oracolo di PianetaSegreto";
 
   const v = (oroscopo2026 && oroscopo2026[signName]) ? oroscopo2026[signName] : null;
   const formatted = formatHoroscopeForOutput(signName, v);
 
-  const cleanTitle = sanitizePlainASCII(`Luna Vallyy - ${oracle}`);
-  const cleanBody  = sanitizePlainASCII(formatted);
   const link = getBaseLink() + `?day=${encodeURIComponent(day)}&sign=${encodeURIComponent(signName)}`;
 
-  // testo Discord “solo testo + link”
-  const discordText =
-    sanitizePlainASCII(
-      `${cleanTitle}\n` +
-      `Giorno: ${day}\n` +
-      `Pianetini: ${signName}\n\n` +
-      `${cleanBody}\n\n` +
-      `Link: ${link}`
-    );
+  // SOLO TESTO + LINK (discord safe)
+  const discordText = sanitizePlainASCII(
+    `Luna Vallyy - ${oracle}\n` +
+    `Giorno: ${day}\n` +
+    `Pianetini: ${signName}\n\n` +
+    `${formatted}\n\n` +
+    `Link: ${link}`
+  );
 
-  // salva in bacheca
   const payload = {
     at: Date.now(),
     day,
-    sign: signName,
+    sign: sanitizePlainASCII(signName),
     author,
     oracle,
     text: discordText,
@@ -431,14 +447,13 @@ async function postOroscopoToBacheca(signName) {
   await set(ref(db, BACHECA_LATEST), payload);
 
   lunaBot(`Bacheca aggiornata: ${signName} (${day}).`);
-  alert("POST OK: bacheca aggiornata.\nOra puoi anche usare 'COPIA DISCORD'.");
+  alert("POST OK: bacheca aggiornata.");
 }
 
 async function copyDiscordMessage(signName) {
   if (!CURRENT_DAY) return alert("CURRENT_DAY non disponibile.");
 
   const day = CURRENT_DAY;
-  const author = sanitizePlainASCII(window.LUNA.user || "Luna Vallyy");
   const oracle = "Oracolo di PianetaSegreto";
 
   const v = (oroscopo2026 && oroscopo2026[signName]) ? oroscopo2026[signName] : null;
@@ -446,20 +461,19 @@ async function copyDiscordMessage(signName) {
 
   const link = getBaseLink() + `?day=${encodeURIComponent(day)}&sign=${encodeURIComponent(signName)}`;
 
-  const msg =
-    sanitizePlainASCII(
-      `Luna Vallyy - ${oracle}\n` +
-      `Giorno: ${day}\n` +
-      `Pianetini: ${signName}\n\n` +
-      `${formatted}\n\n` +
-      `Link: ${link}`
-    );
+  const msg = sanitizePlainASCII(
+    `Luna Vallyy - ${oracle}\n` +
+    `Giorno: ${day}\n` +
+    `Pianetini: ${signName}\n\n` +
+    `${formatted}\n\n` +
+    `Link: ${link}`
+  );
 
   try {
     await navigator.clipboard.writeText(msg);
     alert("Copiato negli appunti (Discord pronto).");
-  } catch (e) {
-    // fallback
+  } catch {
+    // fallback (alcuni browser/hosting bloccano clipboard API)
     const ta = document.createElement("textarea");
     ta.value = msg;
     document.body.appendChild(ta);
@@ -469,70 +483,7 @@ async function copyDiscordMessage(signName) {
     alert("Copiato negli appunti (fallback).");
   }
 
-  if (DEBUG) console.log("[POST] discord msg:", msg, "by", author);
-}
-
-// ==========================
-// 🌙 resync dopo mezzanotte
-// ==========================
-function scheduleMidnightResync() {
-  const now = new Date();
-  const next = new Date(now);
-  next.setHours(24, 0, 5, 0);
-  const ms = next.getTime() - now.getTime();
-
-  setTimeout(() => {
-    if (DEBUG) console.log("[ORO] midnight resync...");
-    ensureDailyOroscopoUpToDate().catch(e => console.warn("[ORO] midnight ensure error:", e));
-    scheduleMidnightResync();
-  }, ms);
-}
-
-// ==========================
-// 🖼️ immagini
-// ==========================
-function safeImg(img) {
-  return `immagini/${img || "p01.png"}`;
-}
-
-function preloadImages() {
-  SIGNS.forEach(s => {
-    const img = new Image();
-    img.src = safeImg(s.img);
-  });
-}
-
-// ==========================
-// 🌙 START
-// ==========================
-window.addEventListener("load", init);
-
-function init() {
-  if (DEBUG) {
-    console.log("[APP] loaded");
-    console.log("[APP] db =", firebaseConfig.databaseURL);
-  }
-
-  playIntro();
-
-  ensureDailyOroscopoUpToDate().catch(e => console.warn("[ORO] ensureDailyOroscopoUpToDate error:", e));
-  scheduleMidnightResync();
-
-  initOroscopoRealtime();
-  initUI();
-  initCards();
-  preloadImages();
-  initSpin();
-  initModal();
-  initAdmin();
-  listenSpin();
-  idlePulse();
-
-  // export comodi
-  window.LUNA.migrateTodayToRichFormat = migrateTodayToRichFormat;
-  window.LUNA.ensureDailyOroscopoUpToDate = ensureDailyOroscopoUpToDate;
-
-  console.log("### LUNA SCRIPT MARKER 2025-12-28 CAPOLAVORO ###");
+  if (DEBUG) console.log("[POST] discord msg:", msg);
 }
 
 // ==========================
@@ -594,7 +545,6 @@ function attachDaily(day) {
   if (CURRENT_DAY === day) return;
 
   CURRENT_DAY = day;
-
   window.LUNA.currentDay = CURRENT_DAY;
   window.CURRENT_DAY = CURRENT_DAY;
 
@@ -607,7 +557,6 @@ function attachDaily(day) {
       oroscopo2026 = s2.val() || {};
       window.LUNA.oroscopo = oroscopo2026;
       window.OROSCOPO_2026 = oroscopo2026;
-
       if (DEBUG) console.log("[ORO] day =", CURRENT_DAY, "keys =", Object.keys(oroscopo2026 || {}));
     },
     err => console.error("[ORO] daily read error:", err?.code, err?.message, err)
@@ -648,6 +597,20 @@ function initUI() {
     STATE = "IDLE";
     lunaBot(`Benvenuto ${name}. La ruota attende.`);
   }
+}
+
+// ==========================
+// 🖼️ IMMAGINI
+// ==========================
+function safeImg(img) {
+  return `immagini/${img || "p01.png"}`;
+}
+
+function preloadImages() {
+  SIGNS.forEach(s => {
+    const img = new Image();
+    img.src = safeImg(s.img);
+  });
 }
 
 // ==========================
@@ -703,6 +666,8 @@ function listenSpin() {
 // ==========================
 // 🚀 SPIN animation
 // ==========================
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
 async function playSpin(w) {
   if (!cards.length) return;
   if (w < 0 || w >= SIGNS.length) return;
@@ -750,7 +715,7 @@ function idlePulse() {
 }
 
 // ==========================
-// 🌌 MODALE (supporta stringa o oggetto ricco)
+// 🌌 MODALE
 // ==========================
 function initModal() {
   const closeBtn = document.getElementById("closeModal");
@@ -801,7 +766,7 @@ function initAdmin() {
   const save   = document.getElementById("saveAdmin");
   const close  = document.getElementById("closeAdmin");
 
-  // ✅ nuovi tasti
+  // nuovi tasti
   const postBtn = document.getElementById("postBacheca");
   const copyBtn = document.getElementById("copyDiscord");
 
@@ -821,35 +786,32 @@ function initAdmin() {
   };
 
   save.onclick = async () => {
-    if (!isAdmin) return;
+    if (!isAdmin) return alert("Prima attiva ADMIN.");
     if (!CURRENT_DAY) return alert("Giorno corrente non disponibile.");
 
     const existing = oroscopo2026?.[select.value];
 
     if (existing && typeof existing === "object") {
-      await update(ref(db, `${ORO_DAILY_BASE}/${CURRENT_DAY}/${select.value}`), { testo: text.value });
+      await update(ref(db, `${ORO_DAILY_BASE}/${CURRENT_DAY}/${select.value}`), { testo: sanitizePlainASCII(text.value) });
     } else {
-      await update(ref(db, `${ORO_DAILY_BASE}/${CURRENT_DAY}`), { [select.value]: text.value });
+      await update(ref(db, `${ORO_DAILY_BASE}/${CURRENT_DAY}`), { [select.value]: sanitizePlainASCII(text.value) });
     }
 
     await update(ref(db, `${ORO_DAILY_BASE}/${CURRENT_DAY}`), { updatedAt: Date.now() });
     lunaBot(`Oroscopo aggiornato: ${select.value}.`);
+    alert("Salvato.");
   };
 
-  // ✅ POST BACHECA
   if (postBtn) {
     postBtn.onclick = async () => {
       if (!isAdmin) return alert("Prima attiva ADMIN.");
-      const signName = select.value;
-      await postOroscopoToBacheca(signName);
+      await postOroscopoToBacheca(select.value);
     };
   }
 
-  // ✅ COPIA DISCORD
   if (copyBtn) {
     copyBtn.onclick = async () => {
-      const signName = select.value;
-      await copyDiscordMessage(signName);
+      await copyDiscordMessage(select.value);
     };
   }
 
@@ -881,6 +843,33 @@ function lunaBot(text) {
 }
 
 // ==========================
-// 🛠️ UTILITY
+// ✅ INIT
 // ==========================
-const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+window.addEventListener("load", init);
+
+function init() {
+  if (DEBUG) {
+    console.log("[APP] loaded");
+    console.log("[APP] db =", firebaseConfig.databaseURL);
+    console.log("### LUNA SCRIPT MARKER 2025-12-28 CAPOLAVORO ###");
+  }
+
+  playIntro();
+
+  ensureDailyOroscopoUpToDate().catch(e => console.warn("[ORO] ensureDailyOroscopoUpToDate error:", e));
+  scheduleMidnightResync();
+
+  initOroscopoRealtime();
+  initUI();
+  initCards();
+  preloadImages();
+  initSpin();
+  initModal();
+  initAdmin();
+  listenSpin();
+  idlePulse();
+
+  // export comodi per console
+  window.LUNA.migrateTodayToRichFormat = migrateTodayToRichFormat;
+  window.LUNA.ensureDailyOroscopoUpToDate = ensureDailyOroscopoUpToDate;
+}
