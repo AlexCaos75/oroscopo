@@ -13,10 +13,10 @@
       --txt: rgba(255,255,255,.94);
       --muted: rgba(255,255,255,.72);
       --muted2: rgba(255,255,255,.55);
-      --stroke: rgba(255,255,255,.16);
       --shadow: 0 22px 90px rgba(0,0,0,.62);
-      --r: 24px;
-      --r2: 18px;
+      --shadow2: 0 10px 42px rgba(0,0,0,.45);
+      --r: 22px;
+      --r2: 16px;
       --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
       --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     }
@@ -49,16 +49,14 @@
       mix-blend-mode:screen;
     }
 
-    .wrap{ max-width:1020px; margin:0 auto; padding:26px 16px 50px; }
+    .wrap{ max-width: 1020px; margin: 0 auto; padding: 26px 16px 50px; }
 
     .topbar{
       display:flex; gap:12px; align-items:center; justify-content:space-between;
       margin: 10px 0 18px; flex-wrap:wrap;
     }
 
-    .brand{
-      display:flex; align-items:center; gap:12px; user-select:none; min-width:260px;
-    }
+    .brand{ display:flex; align-items:center; gap:12px; user-select:none; min-width:260px; }
 
     .sigil{
       width:48px;height:48px;border-radius:16px;
@@ -70,9 +68,8 @@
       display:grid; place-items:center;
       font-weight:900; letter-spacing:.6px;
     }
-
     .brand h1{ margin:0; font-size:20px; line-height:1.15; }
-    .brand p{ margin:6px 0 0; font-size:13px; color:var(--muted2); max-width:520px; }
+    .brand p{ margin:6px 0 0; font-size:13px; color:var(--muted2); max-width: 520px; }
 
     .actions{ display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
 
@@ -86,11 +83,9 @@
       cursor:pointer;
       font-weight:900;
       font-size:13px;
-      letter-spacing:.35px;
+      letter-spacing:.3px;
       transition:transform .10s ease, background .18s ease, border-color .18s ease, box-shadow .18s ease;
-      display:inline-flex;
-      align-items:center;
-      gap:10px;
+      display:inline-flex; align-items:center; gap:10px;
       box-shadow: 0 12px 34px rgba(0,0,0,.25);
       text-decoration:none;
     }
@@ -110,13 +105,14 @@
     }
 
     .card{
-      background: linear-gradient(180deg, rgba(255,255,255,.09), rgba(255,255,255,.05));
+      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.05));
       border:1px solid rgba(255,255,255,.16);
       border-radius: var(--r);
       box-shadow: var(--shadow);
       overflow:hidden;
       position:relative;
     }
+
     .card:before{
       content:"";
       position:absolute; inset:-2px;
@@ -130,30 +126,32 @@
     }
 
     .inner{ position:relative; padding:18px; }
-    .meta{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:10px; }
 
+    .meta{
+      display:flex; align-items:flex-start; justify-content:space-between;
+      gap:12px; margin-bottom:10px;
+    }
     .title{ margin:0; font-size:18px; font-weight:1000; letter-spacing:.2px; }
     .subtitle{ margin:8px 0 0; color:var(--muted); font-size:13px; line-height:1.4; }
 
     .chips{ display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
     .chip{
-      font-size:12px;
-      color: rgba(255,255,255,.88);
+      font-size:12px; color: rgba(255,255,255,.88);
       border:1px solid rgba(255,255,255,.16);
       background: rgba(0,0,0,.18);
       padding:6px 10px;
       border-radius: 999px;
       backdrop-filter: blur(8px);
-      font-weight:800;
     }
 
-    .divider{ height:1px; background: rgba(255,255,255,.14); margin:14px 0; }
+    .divider{ height:1px; background: rgba(255,255,255,.14); margin:14px 0 14px; }
 
     .box{
       background: rgba(0,0,0,.22);
       border:1px solid rgba(255,255,255,.14);
       border-radius: var(--r2);
       padding:14px;
+      box-shadow: var(--shadow2);
       backdrop-filter: blur(10px);
     }
 
@@ -162,22 +160,20 @@
       white-space:pre-wrap;
       word-break:break-word;
       font-family:var(--mono);
-      font-size:13.6px;
+      font-size:13.5px;
       line-height:1.55;
       color: rgba(255,255,255,.92);
     }
 
-    /* IMMAGINE / GIF — no taglio */
+    /* ✅ immagine/gif 100% (come vuoi tu) */
     .media{
       width:100%;
       height:auto;
-      max-height:640px;
-      object-fit:contain;
+      display:none;
       border-radius: var(--r2);
       margin-top:14px;
       border:1px solid rgba(255,255,255,.18);
-      background: rgba(0,0,0,.35);
-      display:none;
+      box-shadow: var(--shadow2);
     }
 
     .video-wrap{
@@ -185,10 +181,11 @@
       border-radius: var(--r2);
       overflow:hidden;
       border:1px solid rgba(255,255,255,.18);
+      box-shadow: var(--shadow2);
       display:none;
       background: rgba(0,0,0,.25);
     }
-    .video-wrap iframe{ width:100%; aspect-ratio:16/9; display:block; }
+    .video-wrap iframe{ width:100%; aspect-ratio:16/9; display:block; border:0; }
 
     .music-row{
       margin-top:14px;
@@ -197,19 +194,23 @@
       flex-wrap:wrap;
       align-items:center;
     }
+    .music-row .btn{ padding:12px 16px; }
+    #musicWrap{ width:1px;height:1px; opacity:0; position:absolute; left:-9999px; top:-9999px; }
 
     .foot{
       margin-top:14px;
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-      align-items:center;
-      justify-content:space-between;
+      display:flex; gap:10px; flex-wrap:wrap;
+      align-items:center; justify-content:space-between;
       color:var(--muted2);
       font-size:12.5px;
     }
 
-    .status{ font-weight:1000; letter-spacing:.35px; font-size:12px; opacity:.9; }
+    .status{
+      font-weight:900;
+      letter-spacing:.35px;
+      font-size:12px;
+      opacity:.9;
+    }
 
     .toast{
       position:fixed;
@@ -223,12 +224,13 @@
       color:rgba(255,255,255,.92);
       font-size:13px;
       font-weight:900;
+      box-shadow: 0 20px 60px rgba(0,0,0,.58);
+      backdrop-filter: blur(12px);
       opacity:0;
       pointer-events:none;
       transition:opacity .18s ease, transform .18s ease;
     }
     .toast.show{ opacity:1; transform:translateX(-50%) translateY(-2px); }
-
     @media (max-width:520px){
       .meta{ flex-direction:column; align-items:flex-start; }
       .actions{ justify-content:flex-start; }
@@ -243,7 +245,7 @@
         <div class="sigil">PS</div>
         <div>
           <h1>Bacheca Pianeta Segreto</h1>
-          <p>Ultimo messaggio pubblicato. Testo pulito e pronto anche per Discord (ASCII safe).</p>
+          <p>Ultimo messaggio pubblicato (testo ASCII safe). Immagine/GIF 100% + video opzionale + musica YouTube invisibile con ASCOLTA/STOP.</p>
         </div>
       </div>
 
@@ -275,31 +277,26 @@
 
         <div class="box">
           <pre class="text" id="postText">Caricamento…</pre>
-
           <img id="postImage" class="media" alt="Immagine Pianeta Segreto" />
 
-          <div class="music-row" id="musicRow">
-            <button class="btn oracolo" id="musicPlay" type="button">ASCOLTA</button>
-            <button class="btn" id="musicStop" type="button">STOP</button>
-            <span style="font-size:12px;opacity:.75;font-weight:800;">Musica invisibile (loop)</span>
-
-            <iframe id="musicFrame"
-              src="about:blank"
-              style="width:0;height:0;border:0;position:absolute;left:-9999px;top:-9999px;"
-              allow="autoplay"></iframe>
-          </div>
-
           <div id="videoWrap" class="video-wrap">
-            <iframe id="ytFrame" src="" title="Video Pianeta Segreto"
-              frameborder="0"
+            <iframe id="ytFrame"
+              src=""
+              title="Video Pianeta Segreto"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowfullscreen></iframe>
+          </div>
+
+          <div class="music-row" id="musicRow">
+            <button class="btn primary" id="musicPlay" type="button">ASCOLTA</button>
+            <button class="btn" id="musicStop" type="button">STOP</button>
+            <div id="musicWrap"></div>
           </div>
         </div>
 
         <div class="foot">
           <div id="footLeft">Nessun post ancora.</div>
-          <div id="footRight">Suggerimento: Ruota → ADMIN → POST NEUTRO / POST OROSCOPO.</div>
+          <div id="footRight">Suggerimento: Ruota → ADMIN → POST NEUTRO.</div>
         </div>
       </div>
     </div>
@@ -323,10 +320,8 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
-
     const BACHECA_LATEST = "ruota-lunare/bacheca/latest";
 
-    // UI
     const postTitle = document.getElementById("postTitle");
     const postSub   = document.getElementById("postSub");
     const postText  = document.getElementById("postText");
@@ -346,12 +341,14 @@
     const ytFrame   = document.getElementById("ytFrame");
 
     const musicRow  = document.getElementById("musicRow");
+    const musicWrap = document.getElementById("musicWrap");
     const musicPlay = document.getElementById("musicPlay");
     const musicStop = document.getElementById("musicStop");
-    const musicFrame= document.getElementById("musicFrame");
 
     const toast     = document.getElementById("toast");
+
     let latestPayload = null;
+    let currentMusicId = "";
 
     function toastShow(msg){
       toast.textContent = msg;
@@ -366,12 +363,27 @@
       }catch{ return ""; }
     }
 
-    function ytId(id){
-      if (typeof id !== "string") return "";
-      const s = id.trim();
-      if (/^[a-zA-Z0-9_-]{6,20}$/.test(s)) return s;
-      return "";
+    function isValidYouTubeId(id){
+      return typeof id === "string" && /^[a-zA-Z0-9_-]{6,20}$/.test(id);
     }
+
+    function stopMusic(){
+      musicWrap.innerHTML = "";
+      musicWrap.dataset.on = "0";
+    }
+
+    function playMusic(id){
+      if (!isValidYouTubeId(id)) return;
+      stopMusic();
+      musicWrap.dataset.on = "1";
+      musicWrap.innerHTML = `<iframe
+        src="https://www.youtube.com/embed/${id}?autoplay=1&loop=1&playlist=${id}&rel=0"
+        allow="autoplay; encrypted-media"
+        style="width:1px;height:1px;opacity:0;position:absolute;left:-9999px;top:-9999px;border:0"></iframe>`;
+    }
+
+    musicPlay.addEventListener("click", ()=> playMusic(currentMusicId));
+    musicStop.addEventListener("click", ()=> stopMusic());
 
     function render(payload){
       latestPayload = payload || {};
@@ -387,6 +399,7 @@
       postTitle.textContent = title;
       postSub.textContent   = sub;
       postText.textContent  = text;
+
       openLink.href = link;
 
       chips.style.display = "flex";
@@ -395,9 +408,9 @@
       chipTag.textContent  = `Tag: ${tag}`;
 
       footLeft.textContent  = at ? `Ultimo post: ${safeTime(at)}` : "Ultimo post disponibile.";
-      footRight.textContent = "Suggerimento: Ruota → ADMIN → POST NEUTRO / POST OROSCOPO.";
+      footRight.textContent = "Consiglio: Ruota → ADMIN → POST NEUTRO.";
 
-      // immagine/gif (NO TAGLIO)
+      // immagine/gif
       imgEl.style.display = "none";
       imgEl.removeAttribute("src");
       if (payload?.image && typeof payload.image === "string" && payload.image.trim()){
@@ -406,32 +419,21 @@
       }
 
       // video visibile
-      const video = ytId(payload?.video || "");
       videoWrap.style.display = "none";
       ytFrame.src = "";
-      if (video){
-        ytFrame.src = "https://www.youtube.com/embed/" + video + "?rel=0&modestbranding=1";
+      if (payload?.video && isValidYouTubeId(payload.video)){
+        ytFrame.src = "https://www.youtube.com/embed/" + payload.video + "?rel=0";
         videoWrap.style.display = "block";
       }
 
-      // musica invisibile
-      const music = ytId(payload?.music || "");
+      // musica invisibile (con tasti)
+      currentMusicId = "";
       musicRow.style.display = "none";
-      musicFrame.src = "about:blank";
+      stopMusic();
 
-      if (music){
+      if (payload?.music && isValidYouTubeId(payload.music)){
+        currentMusicId = payload.music;
         musicRow.style.display = "flex";
-
-        musicPlay.onclick = () => {
-          // parte solo dopo click (autoplay con audio consentito dai browser)
-          musicFrame.src = "https://www.youtube.com/embed/" + music + "?autoplay=1&loop=1&playlist=" + music + "&controls=0&rel=0&modestbranding=1";
-          toastShow("Musica ON");
-        };
-
-        musicStop.onclick = () => {
-          musicFrame.src = "about:blank";
-          toastShow("Musica OFF");
-        };
       }
 
       statusEl.textContent = "LIVE";
@@ -441,14 +443,16 @@
       latestPayload = null;
       postTitle.textContent = "Bacheca Pianeta Segreto";
       postSub.textContent   = "In attesa del primo messaggio.";
-      postText.textContent  = "Nessun post ancora.\n\nApri la Ruota, entra ADMIN e pubblica un post.";
+      postText.textContent  = "Nessun post ancora.\n\nApri la Ruota, entra ADMIN e premi POST NEUTRO.";
       chips.style.display = "none";
       openLink.href = "./index.html";
       imgEl.style.display = "none";
       videoWrap.style.display = "none";
       musicRow.style.display = "none";
+      stopMusic();
       statusEl.textContent = "VUOTO";
       footLeft.textContent = "Nessun post ancora.";
+      footRight.textContent = "Suggerimento: Ruota → ADMIN → POST NEUTRO.";
     }
 
     copyBtn.addEventListener("click", async () => {
