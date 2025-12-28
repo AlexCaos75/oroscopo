@@ -3,47 +3,240 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="theme-color" content="#00060d" />
+  <meta name="theme-color" content="#050511" />
   <title>Bacheca Pianeta Segreto</title>
-  <link rel="stylesheet" href="style.css" />
+
+  <!-- opzionale: se vuoi mantenere qualche font o reset dal tuo style.css -->
+  <!-- <link rel="stylesheet" href="style.css" /> -->
+
   <style>
-    /* mini stile extra, non rompe il tuo style.css */
-    .bacheca-wrap{max-width:900px;margin:0 auto;padding:22px 14px;}
-    .bacheca-card{background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:16px;backdrop-filter: blur(6px);}
-    .bacheca-title{font-size:20px;margin:0 0 8px 0;}
-    .bacheca-sub{opacity:.85;margin:0 0 14px 0;line-height:1.35;}
-    .bacheca-meta{opacity:.85;font-size:13px;margin:10px 0 10px;}
-    .bacheca-text{white-space:pre-wrap;line-height:1.35;background:rgba(255,255,255,.06);padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,.10);}
-    .bacheca-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
-    .bacheca-actions button, .bacheca-actions a{
-      display:inline-flex;align-items:center;justify-content:center;
-      padding:10px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.14);
-      background:rgba(255,255,255,.08);color:#fff;text-decoration:none;cursor:pointer;
+    :root{
+      --bg0:#050511;
+      --bg1:#090a1d;
+      --glass:rgba(255,255,255,.08);
+      --line:rgba(255,255,255,.14);
+      --txt:rgba(255,255,255,.92);
+      --muted:rgba(255,255,255,.70);
+      --muted2:rgba(255,255,255,.55);
+      --shadow: 0 18px 60px rgba(0,0,0,.55);
+      --r:18px;
     }
-    .bacheca-actions button:hover,.bacheca-actions a:hover{background:rgba(255,255,255,.12)}
-    .bacheca-empty{opacity:.85}
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      color:var(--txt);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Liberation Sans", sans-serif;
+      background: radial-gradient(1200px 600px at 20% 10%, #1a1b3f 0%, transparent 55%),
+                  radial-gradient(900px 500px at 85% 30%, #2a1052 0%, transparent 55%),
+                  radial-gradient(1200px 700px at 50% 95%, #0b3a50 0%, transparent 55%),
+                  linear-gradient(180deg, var(--bg0), var(--bg1));
+      overflow-x:hidden;
+    }
+
+    /* stelle */
+    .stars{
+      position:fixed; inset:0;
+      background-image:
+        radial-gradient(2px 2px at 20% 30%, rgba(255,255,255,.55) 40%, transparent 41%),
+        radial-gradient(1px 1px at 70% 20%, rgba(255,255,255,.35) 40%, transparent 41%),
+        radial-gradient(1px 1px at 45% 60%, rgba(255,255,255,.25) 40%, transparent 41%),
+        radial-gradient(2px 2px at 85% 75%, rgba(255,255,255,.35) 40%, transparent 41%),
+        radial-gradient(1px 1px at 15% 80%, rgba(255,255,255,.25) 40%, transparent 41%),
+        radial-gradient(1px 1px at 55% 15%, rgba(255,255,255,.25) 40%, transparent 41%);
+      opacity:.65;
+      pointer-events:none;
+      filter: blur(.2px);
+    }
+
+    .wrap{
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 28px 14px 44px;
+      position:relative;
+    }
+
+    .topbar{
+      display:flex;
+      gap:12px;
+      align-items:center;
+      justify-content:space-between;
+      margin-bottom:14px;
+    }
+
+    .brand{
+      display:flex; gap:12px; align-items:center;
+    }
+
+    .moon{
+      width:42px; height:42px;
+      border-radius:50%;
+      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.95), rgba(255,255,255,.35) 45%, rgba(255,255,255,.10) 70%);
+      box-shadow: 0 0 35px rgba(167,139,250,.30);
+      border:1px solid rgba(255,255,255,.18);
+    }
+
+    .title{
+      margin:0;
+      font-size: 20px;
+      letter-spacing:.2px;
+    }
+    .subtitle{
+      margin:3px 0 0;
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.35;
+    }
+
+    .chip{
+      padding:8px 10px;
+      border-radius: 999px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.20);
+      color:var(--muted);
+      font-size:12px;
+      user-select:none;
+      white-space:nowrap;
+    }
+
+    .card{
+      border-radius: var(--r);
+      border:1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.06));
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      overflow:hidden;
+      position:relative;
+    }
+    .card::before{
+      content:"";
+      position:absolute; inset:-2px;
+      background: radial-gradient(700px 220px at 15% 0%, rgba(167,139,250,.28), transparent 60%),
+                  radial-gradient(700px 220px at 85% 10%, rgba(56,189,248,.20), transparent 60%),
+                  radial-gradient(700px 220px at 60% 100%, rgba(34,211,238,.14), transparent 65%);
+      pointer-events:none;
+    }
+
+    .card-inner{
+      position:relative;
+      padding: 16px;
+    }
+
+    .state{
+      color: var(--muted);
+      padding: 12px 0;
+      font-size: 14px;
+    }
+
+    .meta{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      color: var(--muted2);
+      font-size:12px;
+      margin-top:8px;
+    }
+
+    .meta b{color:var(--txt); font-weight:650}
+
+    .text{
+      margin-top: 12px;
+      white-space: pre-wrap;
+      line-height: 1.45;
+      font-size: 14px;
+      color: rgba(255,255,255,.90);
+      background: rgba(0,0,0,.25);
+      border:1px solid rgba(255,255,255,.12);
+      border-radius: 14px;
+      padding: 12px;
+    }
+
+    .actions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top: 14px;
+    }
+
+    .btn, .linkbtn{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.10);
+      color: rgba(255,255,255,.92);
+      text-decoration:none;
+      cursor:pointer;
+      transition: transform .12s ease, background .12s ease, border-color .12s ease;
+      user-select:none;
+    }
+    .btn:hover, .linkbtn:hover{
+      transform: translateY(-1px);
+      background: rgba(255,255,255,.14);
+      border-color: rgba(255,255,255,.22);
+    }
+    .btn:active, .linkbtn:active{
+      transform: translateY(0px);
+    }
+
+    .btn.primary{
+      background: linear-gradient(180deg, rgba(167,139,250,.28), rgba(167,139,250,.10));
+      border-color: rgba(167,139,250,.38);
+    }
+
+    .footer-note{
+      margin-top: 10px;
+      font-size: 12px;
+      color: var(--muted2);
+      opacity:.95;
+    }
+
+    @media (max-width:520px){
+      .title{font-size:18px}
+      .chip{display:none}
+      .card-inner{padding:14px}
+      .text{font-size:13.5px}
+    }
   </style>
 </head>
 
 <body>
-  <div class="bacheca-wrap">
-    <div class="bacheca-card">
-      <h1 class="bacheca-title">Bacheca Pianeta Segreto</h1>
-      <p class="bacheca-sub">
-        Ultimo messaggio pubblicato da <b>Luna Vallyy</b> (testo pulito, pronto anche per Discord).
-      </p>
+  <div class="stars" aria-hidden="true"></div>
 
-      <div id="bachecaState" class="bacheca-empty">Caricamento...</div>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="brand">
+        <div class="moon" aria-hidden="true"></div>
+        <div>
+          <h1 class="title">Bacheca Pianeta Segreto</h1>
+          <p class="subtitle">Ultimo messaggio pubblicato da <b>Luna Vallyy</b> (testo pulito, pronto anche per Discord).</p>
+        </div>
+      </div>
 
-      <div id="bachecaBlock" style="display:none;">
-        <div class="bacheca-meta" id="bachecaMeta"></div>
+      <div class="chip">LIVE • Firebase</div>
+    </div>
 
-        <div class="bacheca-text" id="bachecaText"></div>
+    <div class="card">
+      <div class="card-inner">
+        <div id="bachecaState" class="state">Caricamento...</div>
 
-        <div class="bacheca-actions">
-          <a id="bachecaOpenLink" href="#" target="_blank" rel="noopener">Apri link</a>
-          <button id="bachecaCopy">Copia Discord</button>
-          <a href="index.html">Torna alla Ruota</a>
+        <div id="bachecaBlock" style="display:none;">
+          <div class="meta" id="bachecaMeta"></div>
+          <div class="text" id="bachecaText"></div>
+
+          <div class="actions">
+            <a id="bachecaOpenLink" class="linkbtn primary" href="#" target="_blank" rel="noopener">Apri link</a>
+            <button id="bachecaCopy" class="btn" type="button">Copia Discord</button>
+            <a class="linkbtn" href="index.html">Torna alla Ruota</a>
+          </div>
+
+          <div class="footer-note">
+            Suggerimento: se in Discord vuoi solo testo, usa “Copia Discord”.
+          </div>
         </div>
       </div>
     </div>
