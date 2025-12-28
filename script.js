@@ -1,5 +1,5 @@
 // ==========================
-// 🔥 RUOTA LUNARE 2026 — CAPOLAVORO VINCENTE (FULL)
+// 🔥 RUOTA LUNARE 2026 — CAPOLAVORO VINCENTE (FULL FIX)
 // ✅ 12 segni: random SENZA ripetizioni fino a completamento
 // ✅ segni scelti restano evidenti -> reset round automatico
 // ✅ multiplayer sync con Firebase runTransaction
@@ -8,7 +8,10 @@
 // ✅ auto daily init + lock globale (1 volta al giorno)
 // ✅ Oroscopo ricco compatibile
 // ✅ POST bacheca: OROSCOPO + POST NEUTRO (indipendente)
-// ✅ COPIA POST: genera HTML incollabile (stile TGIFMOON + immagine enorme intera + musica con trucco)
+// ✅ COPIA POST: HTML incollabile RICCO (immagine/gif grande + video o musica invisibile autoplay + tasti)
+// ✅ Musica: trucco iframe hidden autoplay + enablejsapi=1 + loop + playlist + postMessage play/pause
+// ✅ NIENTE <script> nel post (bacheche lo bloccano)
+// ✅ NIENTE funzioni duplicate (fix "already declared")
 // ==========================
 
 const DEBUG = true;
@@ -111,7 +114,7 @@ function parseCurrentDayFromDb(v) {
 }
 
 // ==========================
-// 🧼 SANITIZER ASCII (Discord safe)
+// 🧼 SANITIZER ASCII (NO STRANI / DISCORD SAFE)
 // ==========================
 function sanitizePlainASCII(input) {
   let s = String(input ?? "");
@@ -138,8 +141,6 @@ function normalizeLink(raw) {
 function extractYouTubeId(input) {
   const s = String(input || "").trim();
   if (!s) return "";
-
-  // già ID
   if (/^[a-zA-Z0-9_-]{6,20}$/.test(s)) return s;
 
   let m = s.match(/youtu\.be\/([a-zA-Z0-9_-]{6,20})/i);
@@ -152,22 +153,6 @@ function extractYouTubeId(input) {
   if (m) return m[1];
 
   return "";
-}
-
-// ✅ trucco: se incolli un iframe embed, ricavo automaticamente l’ID
-function extractYouTubeIdSmart(input) {
-  const s = String(input || "").trim();
-  if (!s) return "";
-
-  // se mi incolli direttamente codice iframe
-  const m1 = s.match(/youtube\.com\/embed\/([a-zA-Z0-9_-]{6,20})/i);
-  if (m1) return m1[1];
-
-  // se mi incolli src="...embed/ID..."
-  const m2 = s.match(/src\s*=\s*["'][^"']*\/embed\/([a-zA-Z0-9_-]{6,20})/i);
-  if (m2) return m2[1];
-
-  return extractYouTubeId(s);
 }
 
 function safeImg(img) {
@@ -196,7 +181,7 @@ function buildDefaultDailyPayload() {
 }
 
 // ==========================
-// 🧩 FORMAT OUTPUT
+// 🧩 FORMAT OUTPUT (stringa o oggetto)
 // ==========================
 function formatHoroscopeForOutput(signName, value) {
   if (typeof value === "string") return value;
@@ -234,7 +219,6 @@ async function ensureDailyOroscopoUpToDate() {
 
   const today = localDayKey();
   const key = "lunaDailyInit_" + today;
-
   if (localStorage.getItem(key) === "1") return;
 
   const lockRef = ref(db, `ruota-lunare/meta/dailyInitLock/${today}`);
@@ -262,6 +246,7 @@ async function ensureDailyOroscopoUpToDate() {
 
     for (const sign of Object.keys(def)) {
       if (sign === "updatedAt") continue;
+
       if (cur[sign] == null) {
         patch[sign] = def[sign];
         continue;
@@ -300,6 +285,54 @@ function scheduleMidnightResync() {
     ensureDailyOroscopoUpToDate().catch(()=>{});
     scheduleMidnightResync();
   }, ms);
+}
+
+// ==========================
+// 🧿 MIGRAZIONE (console)
+// ==========================
+async function migrateTodayToRichFormat() {
+  if (!isAdmin) return alert("Solo ADMIN puo migrare il daily.");
+  if (!CURRENT_DAY) return alert("CURRENT_DAY non disponibile.");
+
+  const day = CURRENT_DAY;
+  const dailyRefToday = ref(db, `${ORO_DAILY_BASE}/${day}`);
+  const snap = await get(dailyRefToday);
+  if (!snap.exists()) return alert("Daily non trovato per " + day);
+
+  const cur = snap.val() || {};
+  const def = buildDefaultDailyPayload();
+  const patch = {};
+  let converted = 0;
+
+  for (const sign of Object.keys(def)) {
+    if (sign === "updatedAt") continue;
+    const v = cur[sign];
+
+    if (v == null) {
+      patch[sign] = def[sign];
+      converted++;
+      continue;
+    }
+
+    if (typeof v === "string") {
+      const d = def[sign];
+      patch[sign] = { testo: v, amore: d.amore, lavoro: d.lavoro, fortuna: d.fortuna, consiglio: d.consiglio };
+      converted++;
+      continue;
+    }
+
+    if (v && typeof v === "object") {
+      const d = def[sign];
+      for (const k of ["testo","amore","lavoro","fortuna","consiglio"]) {
+        if (v[k] == null || v[k] === "") patch[`${sign}/${k}`] = d[k];
+      }
+    }
+  }
+
+  patch.updatedAt = Date.now();
+  await update(dailyRefToday, patch);
+
+  alert(`Migrazione completata: ${converted} segni convertiti per ${day}.`);
 }
 
 // ==========================
@@ -368,7 +401,7 @@ function initUI() {
   });
 
   const saved = sessionStorage.getItem("lunaUser");
-  if (saved) setTimeout(() => doLogin(saved), 800);
+  if (saved) setTimeout(() => doLogin(saved), 3200);
 
   function doLogin(name) {
     if (!name || name.length < 2) return;
@@ -390,7 +423,10 @@ function initUI() {
 // 🖼️ CARDS
 // ==========================
 function preloadImages() {
-  SIGNS.forEach(s => { const img = new Image(); img.src = safeImg(s.img); });
+  SIGNS.forEach(s => {
+    const img = new Image();
+    img.src = safeImg(s.img);
+  });
 }
 
 function initCards() {
@@ -413,7 +449,7 @@ function initCards() {
 }
 
 // ==========================
-// 🌪️ RUOTA — TRANSACTION
+// 🌪️ RUOTA — senza ripetizioni (TRANSACTION)
 // ==========================
 function defaultSpinState() {
   return {
@@ -435,7 +471,9 @@ function setRoundInfo(state) {
 
 function markPicked(state) {
   const picked = new Set(state?.picked || []);
-  cards.forEach((c, idx) => c.classList.toggle("picked", picked.has(idx)));
+  cards.forEach((c, idx) => {
+    c.classList.toggle("picked", picked.has(idx));
+  });
 }
 
 async function ensureSpinStateExists() {
@@ -487,7 +525,10 @@ function listenSpinState() {
     setRoundInfo(st);
     markPicked(st);
 
-    if (ignoreFirstSpin) { ignoreFirstSpin = false; return; }
+    if (ignoreFirstSpin) {
+      ignoreFirstSpin = false;
+      return;
+    }
 
     const w = st?.lastWinner;
     if (typeof w !== "number") return;
@@ -565,7 +606,6 @@ function playIntro() {
 
 // ==========================
 // 🌌 MODALE OROSCOPO
-// ✅ IMMAGINE: sempre “cover adeguato” (riempie senza essere ridicola)
 // ==========================
 function initModal() {
   const closeBtn = document.getElementById("closeModal");
@@ -591,13 +631,13 @@ function openModal(data) {
   const image = document.getElementById("fullscreenImage");
   if (image) {
     image.classList.remove("zoom");
-
-    // ✅ cover “intelligente”: riempie sempre, ma non zooma troppo
     image.style.backgroundImage = `url("${safeImg(data.img)}")`;
-    image.style.backgroundRepeat = "no-repeat";
+
+    // ✅ “riempimento cover adeguato”: contenuto visibile + un filo di presenza
+    // (tu regoli da CSS, qui metto il default più sicuro: contain)
+    image.style.backgroundSize = "contain";
     image.style.backgroundPosition = "center";
-    image.style.backgroundSize = "cover"; // come mi hai chiesto
-    // se vuoi più “intero” metti contain in CSS, ma tu hai chiesto riempimento cover adeguato
+    image.style.backgroundRepeat = "no-repeat";
 
     void image.offsetWidth;
     image.classList.add("zoom");
@@ -654,7 +694,6 @@ async function postOroscopoToBacheca(signName) {
 
 // ==========================
 // 🧾 POST NEUTRO — lettura campi
-// ✅ puoi incollare: link youtube / ID / oppure iframe embed: ricavo da solo
 // ==========================
 function readNeutralFields(){
   const title = sanitizePlainASCII(document.getElementById("pnTitle")?.value || "");
@@ -662,21 +701,13 @@ function readNeutralFields(){
   const link  = normalizeLink(document.getElementById("pnLink")?.value || "");
   const image = String(document.getElementById("pnImage")?.value || "").trim();
 
-  const videoId = extractYouTubeIdSmart(document.getElementById("pnVideo")?.value || "");
-  const musicId = extractYouTubeIdSmart(document.getElementById("pnMusic")?.value || "");
+  const videoId = extractYouTubeId(document.getElementById("pnVideo")?.value || "");
+  const musicId = extractYouTubeId(document.getElementById("pnMusic")?.value || "");
 
   const mode =
     document.querySelector('input[name="pnVideoMode"]:checked')?.value || "visible";
 
-  return {
-    title,
-    body,
-    link,
-    image,
-    videoId,
-    musicId,
-    videoMode: mode
-  };
+  return { title, body, link, image, videoId, musicId, videoMode: mode };
 }
 
 function clearNeutralFields(){
@@ -731,13 +762,7 @@ async function postNeutralToBacheca() {
 }
 
 // ==========================
-// 🧾 COPIA POST — stile TGIFMOON + IMMAGINE ENORME INTERA + MUSICA trucco
-// ✅ niente <script>
-// ✅ niente funzioni globali
-// ✅ niente id fissi: id unico per post
-// ✅ immagine: grande + object-fit:contain (mai tagliata)
-// ✅ musica: iframe hidden + enablejsapi + postMessage play/pause
-// ✅ limite bacheca 5000: genero versione RICCA poi se sfora -> LITE automatica
+// 🧾 COPIA POST — HTML RICCO (stile TGIFMOON + Luna) + MUSICA AUTOPLAY TRUCCO + TASTI
 // ==========================
 function escapeHtml(s){
   return String(s||"")
@@ -748,7 +773,8 @@ function escapeHtml(s){
     .replaceAll("'","&#039;");
 }
 
-function buildPostHTML_RICH({ title, body, link, image, videoId, musicId, videoMode }) {
+function buildPublishablePostHTML({ title, body, link, image, videoId, musicId, videoMode }) {
+  // ✅ titolo/testo: già ASCII-safe da sanitizePlainASCII (evita ?)
   const t = title || "Luna Vallyy - Oracolo di Pianeta Segreto";
   const b = body  || "Il nostro oracolo ci accompagna.\n\nQuando il cielo tace, ascolta il cuore.";
   const l = link  || "https://alexcaos75.github.io/oroscopo/";
@@ -760,27 +786,25 @@ function buildPostHTML_RICH({ title, body, link, image, videoId, musicId, videoM
   const mus = (videoMode === "hidden") ? (musicId || videoId || "") : "";
 
   const escT = escapeHtml(t);
-  const escB = escapeHtml(b).replace(/\n/g,"<br>");
+  const escB = escapeHtml(b).replaceAll("\n", "<br>");
   const escL = escapeHtml(l);
   const escImg = escapeHtml(imgSrc);
   const escVid = escapeHtml(vid);
   const escMus = escapeHtml(mus);
 
-  const uid = "ps" + Math.random().toString(36).slice(2, 9);
+  // uid unico per evitare conflitti fra post (niente id fissi globali)
+  const uid = "psm_" + Math.random().toString(36).slice(2, 8) + "_" + Date.now().toString(36).slice(4);
 
-  // 🎨 stile TGIFMOON, più “Pianeta Segreto”
+  // ✅ “full image intera”: contain + cornice glow -> sembra grande ma non taglia
+  // ✅ “trucco autoplay”: iframe già con autoplay=1 + enablejsapi=1 + loop+playlist
   return `
 <div style="
-  text-align:center;
-  max-width:920px;
-  margin:0 auto;
-  padding:28px;
-  background:
-    radial-gradient(circle at 18% 15%, rgba(0,255,255,0.22), transparent 70%),
-    radial-gradient(circle at 85% 85%, rgba(120,180,255,0.18), transparent 70%),
-    radial-gradient(circle at 50% 0%, rgba(180,80,255,0.18), transparent 55%),
-    linear-gradient(160deg, #071620 0%, #0c2a3d 50%, #124158 100%);
+  max-width:900px;margin:0 auto;padding:28px;
   border-radius:26px;
+  background:
+    radial-gradient(circle at 20% 15%, rgba(0,255,255,0.22), transparent 70%),
+    radial-gradient(circle at 80% 85%, rgba(120,180,255,0.18), transparent 70%),
+    linear-gradient(160deg, #071620 0%, #0c2a3d 50%, #124158 100%);
   border:1px solid rgba(0,255,255,0.35);
   box-shadow:0 0 45px rgba(0,255,255,0.22), inset 0 0 28px rgba(0,255,255,0.12);
   color:#eaffff;
@@ -788,155 +812,139 @@ function buildPostHTML_RICH({ title, body, link, image, videoId, musicId, videoM
 ">
 
   <div style="
-    font-size:26px;
-    font-weight:900;
-    letter-spacing:3px;
-    margin-bottom:14px;
-    color:#bfffff;
-    text-shadow:0 0 16px rgba(0,255,255,0.55);
-  ">${escT}</div>
+    display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;
+    padding:10px 14px;border-radius:18px;
+    background:rgba(255,255,255,0.06);
+    border:1px solid rgba(0,255,255,0.18);
+    box-shadow:0 0 18px rgba(0,255,255,0.10);
+  ">
+    <div style="min-width:220px;">
+      <div style="font-size:22px;font-weight:900;letter-spacing:2px;color:#bfffff;text-shadow:0 0 14px rgba(0,255,255,0.35);">
+        ${escT}
+      </div>
+      <div style="margin-top:6px;font-size:13px;opacity:.92;letter-spacing:.6px;">
+        ORACOLO LUNARE - PIANETA SEGRETO
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+      <a href="${escL}" target="_blank" rel="noopener"
+        style="
+          padding:12px 18px;border-radius:999px;
+          text-decoration:none;font-weight:900;letter-spacing:1px;
+          color:#00131b;
+          background:linear-gradient(180deg,#bfffff,#00ffff55);
+          border:1px solid rgba(0,255,255,0.55);
+          box-shadow:0 0 28px rgba(0,255,255,0.22);
+          display:inline-block;
+        ">
+        APRI ORACOLO
+      </a>
+
+      ${mus ? `
+        <button
+          style="padding:12px 18px;border-radius:999px;border:1px solid rgba(0,255,255,0.55);
+                 background:rgba(0,255,255,0.12);color:#bfffff;font-weight:900;letter-spacing:1px;cursor:pointer;"
+          onclick="(function(){
+            try{
+              var fr=document.getElementById('${uid}');
+              if(!fr) return;
+              fr.contentWindow.postMessage(JSON.stringify({event:'command',func:'playVideo',args:[]}), '*');
+            }catch(e){}
+          })();"
+        >ASCOLTA</button>
+
+        <button
+          style="padding:12px 18px;border-radius:999px;border:1px solid rgba(255,190,190,0.65);
+                 background:rgba(255,180,180,0.12);color:#ffdddd;font-weight:900;letter-spacing:1px;cursor:pointer;"
+          onclick="(function(){
+            try{
+              var fr=document.getElementById('${uid}');
+              if(!fr) return;
+              fr.contentWindow.postMessage(JSON.stringify({event:'command',func:'pauseVideo',args:[]}), '*');
+            }catch(e){}
+          })();"
+        >STOP</button>
+      ` : ``}
+    </div>
+  </div>
 
   <div style="
-    max-width:92%;
-    margin:0 auto 18px auto;
+    margin-top:18px;
+    padding:18px;
+    border-radius:20px;
+    background:rgba(255,255,255,0.06);
+    border:1px solid rgba(255,255,255,0.10);
+    box-shadow:0 0 30px rgba(0,255,255,0.10);
     font-size:18px;
     line-height:1.55;
-    color:#d8ffff;
     font-style:italic;
-    text-shadow:0 0 10px rgba(255,255,255,0.18);
+    text-shadow:0 0 10px rgba(255,255,255,0.25);
   ">${escB}</div>
-
-  <div style="margin:16px 0 18px; display:flex; justify-content:center; gap:12px; flex-wrap:wrap;">
-    <a href="${escL}" target="_blank" rel="noopener"
-      style="
-        display:inline-block;
-        padding:12px 18px;
-        border-radius:999px;
-        border:1px solid rgba(0,255,255,0.55);
-        background:rgba(0,255,255,0.12);
-        color:#bfffff;
-        font-weight:900;
-        letter-spacing:.8px;
-        text-decoration:none;
-        box-shadow:0 0 24px rgba(0,255,255,0.18);
-      ">APRI ORACOLO</a>
-
-    ${mus ? `
-      <button
-        style="padding:12px 18px;border-radius:999px;border:1px solid rgba(0,255,255,0.55);
-               background:rgba(0,255,255,0.12);color:#bfffff;font-weight:900;letter-spacing:.8px;cursor:pointer;"
-        onclick="(function(){
-          var fr=document.getElementById('${uid}');
-          if(!fr) return;
-          fr.src='https://www.youtube.com/embed/${escMus}?enablejsapi=1&autoplay=1&loop=1&playlist=${escMus}';
-          try{ fr.contentWindow.postMessage(JSON.stringify({event:'command',func:'playVideo',args:[]}), '*'); }catch(e){}
-        })();"
-      >ASCOLTA</button>
-
-      <button
-        style="padding:12px 18px;border-radius:999px;border:1px solid rgba(255,190,190,0.65);
-               background:rgba(255,180,180,0.12);color:#ffdddd;font-weight:900;letter-spacing:.8px;cursor:pointer;"
-        onclick="(function(){
-          var fr=document.getElementById('${uid}');
-          if(!fr) return;
-          try{ fr.contentWindow.postMessage(JSON.stringify({event:'command',func:'pauseVideo',args:[]}), '*'); }catch(e){}
-          fr.src='about:blank';
-        })();"
-      >STOP</button>
-    ` : ``}
-  </div>
 
   ${hasImg ? `
   <div style="
-    padding:14px;
+    margin-top:18px;
+    padding:16px;
+    border-radius:22px;
     background:rgba(0,255,255,0.10);
-    border:1px solid rgba(0,255,255,0.28);
-    border-radius:20px;
-    box-shadow:0 0 35px rgba(0,255,255,0.24);
-    display:block;
-    margin:0 auto 18px auto;
+    border:1px solid rgba(0,255,255,0.30);
+    box-shadow:0 0 35px rgba(0,255,255,0.26);
   ">
     <img src="${escImg}" alt="Pianeta Segreto"
       style="
         width:100%;
-        height:72vh;
-        max-height:760px;
+        height:auto;
+        max-height:720px;
         display:block;
-        border-radius:16px;
-        object-fit:contain;
+        border-radius:18px;
         background:#000;
-        box-shadow:0 0 28px rgba(0,255,255,0.18);
+        object-fit:contain;
+        box-shadow:0 0 28px rgba(0,255,255,0.22);
       " />
   </div>
   ` : ``}
 
+  ${mus ? `
+    <div style="display:block; visibility:hidden; height:1px; overflow:hidden; margin:0; padding:0;">
+      <iframe id="${uid}" width="1" height="1"
+        src="https://www.youtube.com/embed/${escMus}?autoplay=1&enablejsapi=1&loop=1&playlist=${escMus}"
+        frameborder="0" allow="autoplay"></iframe>
+    </div>
+  ` : ``}
+
   ${vid ? `
-  <div style="margin-top:14px;">
+  <div style="
+    margin-top:18px;
+    padding:16px;border-radius:22px;
+    background:rgba(255,255,255,0.06);
+    border:1px solid rgba(255,255,255,0.10);
+    box-shadow:0 0 35px rgba(0,255,255,0.12);
+  ">
     <iframe
-      src="https://www.youtube.com/embed/${escVid}?rel=0&modestbranding=1"
-      style="width:100%;aspect-ratio:16/9;border-radius:16px;border:1px solid rgba(0,255,255,0.25);"
+      src="https://www.youtube.com/embed/${escVid}?rel=0&modestbranding=1&playsinline=1"
+      style="width:100%;aspect-ratio:16/9;border-radius:18px;border:1px solid rgba(255,255,255,.14);"
       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
       allowfullscreen></iframe>
   </div>
   ` : ``}
 
-  ${mus ? `
-  <div style="display:block; visibility:hidden; height:1px; overflow:hidden; margin:0; padding:0;">
-    <iframe id="${uid}" width="1" height="1" src="about:blank" frameborder="0" allow="autoplay"></iframe>
+  <div style="margin-top:20px;font-size:14px;opacity:.9;letter-spacing:.6px;color:#bfffff;">
+    Luna Vallyy - Pianeta Segreto
   </div>
-  ` : ``}
 
-  <div style="margin-top:18px; font-size:14px; opacity:.95; color:#afffff;">
-    Pianeta Segreto ✨ <span style="color:#00ffff;">Luna Vallyy</span>
-  </div>
 </div>
 `.trim();
-}
-
-function buildPostHTML_LITE({ title, body, link, image, videoId, musicId, videoMode }) {
-  // versione più corta per rientrare sotto 5000
-  const t = escapeHtml(title || "Luna Vallyy - Oracolo di Pianeta Segreto");
-  const b = escapeHtml(body || "Il nostro oracolo ci accompagna.\n\nQuando il cielo tace, ascolta il cuore.").replace(/\n/g,"<br>");
-  const l = escapeHtml(link || "https://alexcaos75.github.io/oroscopo/");
-  const img = (image && String(image).trim()) ? escapeHtml(String(image).trim()) : "";
-  const vid = (videoMode === "visible") ? escapeHtml(videoId || "") : "";
-  const mus = (videoMode === "hidden") ? escapeHtml((musicId || videoId) || "") : "";
-  const uid = "ps" + Math.random().toString(36).slice(2, 9);
-
-  return `
-<div style="text-align:center;max-width:920px;margin:0 auto;padding:22px;border-radius:22px;
-background:linear-gradient(160deg,#071620,#0c2a3d,#124158);border:1px solid rgba(0,255,255,0.28);color:#eaffff;">
-<div style="font-size:22px;font-weight:900;letter-spacing:2px;margin-bottom:12px;color:#bfffff;">${t}</div>
-<div style="font-size:16px;line-height:1.5;opacity:.95;margin:0 auto 14px;max-width:92%;">${b}</div>
-<div style="margin:12px 0 14px;">
-<a href="${l}" target="_blank" rel="noopener"
-style="display:inline-block;padding:10px 16px;border-radius:999px;border:1px solid rgba(0,255,255,0.55);
-background:rgba(0,255,255,0.12);color:#bfffff;font-weight:900;text-decoration:none;">APRI ORACOLO</a>
-${mus ? `
-<button style="margin-left:8px;padding:10px 16px;border-radius:999px;border:1px solid rgba(0,255,255,0.55);
-background:rgba(0,255,255,0.12);color:#bfffff;font-weight:900;cursor:pointer;"
-onclick="(function(){var fr=document.getElementById('${uid}');if(!fr)return;fr.src='https://www.youtube.com/embed/${mus}?enablejsapi=1&autoplay=1&loop=1&playlist=${mus}';})();">ASCOLTA</button>
-<button style="margin-left:8px;padding:10px 16px;border-radius:999px;border:1px solid rgba(255,190,190,0.65);
-background:rgba(255,180,180,0.12);color:#ffdddd;font-weight:900;cursor:pointer;"
-onclick="(function(){var fr=document.getElementById('${uid}');if(!fr)return;fr.src='about:blank';})();">STOP</button>
-` : ``}
-</div>
-${img ? `<img src="${img}" style="width:100%;height:70vh;max-height:740px;display:block;border-radius:16px;object-fit:contain;background:#000;">` : ``}
-${vid ? `<div style="margin-top:14px;"><iframe src="https://www.youtube.com/embed/${vid}" style="width:100%;aspect-ratio:16/9;border-radius:16px;border:0;" allowfullscreen></iframe></div>` : ``}
-${mus ? `<div style="display:block;visibility:hidden;height:1px;overflow:hidden;"><iframe id="${uid}" width="1" height="1" src="about:blank" allow="autoplay"></iframe></div>` : ``}
-</div>
-`.trim();
-}
-
-function buildPublishablePostHTML(payload) {
-  const rich = buildPostHTML_RICH(payload);
-  if (rich.length <= 4900) return rich;       // buffer sotto 5000
-  return buildPostHTML_LITE(payload);
 }
 
 async function copyPostHTML(){
-  const fields = readNeutralFields();
-  const html = buildPublishablePostHTML(fields);
+  const { title, body, link, image, videoId, musicId, videoMode } = readNeutralFields();
+  const html = buildPublishablePostHTML({ title, body, link, image, videoId, musicId, videoMode });
+
+  // ✅ se la bacheca ha limite 5000, qui ti avviso prima
+  if (html.length > 4900) {
+    alert("ATTENZIONE: il post e' lungo (" + html.length + "). Riduci testo o togli video/immagine per stare sotto 5000.");
+  }
 
   try{
     await navigator.clipboard.writeText(html);
@@ -953,7 +961,7 @@ async function copyPostHTML(){
 }
 
 // ==========================
-// 📋 COPIA DISCORD
+// 📋 COPIA DISCORD (per segno selezionato)
 // ==========================
 async function copyDiscordMessage(signName) {
   if (!CURRENT_DAY) return alert("CURRENT_DAY non disponibile.");
@@ -1085,6 +1093,6 @@ async function init() {
   initAdmin();
   idlePulse();
 
-  // exports utili
+  window.LUNA.migrateTodayToRichFormat = migrateTodayToRichFormat;
   window.LUNA.ensureDailyOroscopoUpToDate = ensureDailyOroscopoUpToDate;
 }
