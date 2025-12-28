@@ -82,60 +82,39 @@
       <label class="sr-only" for="adminText">Testo oroscopo</label>
       <textarea id="adminText" placeholder="Scrivi qui l'oroscopo..." rows="6"></textarea>
 
-      <!-- ✅ POST NEUTRO (13° evento) - NON pescato dalla ruota -->
-      <div style="margin-top:14px; display:grid; gap:10px;">
-
-        <div style="display:flex; gap:8px; flex-wrap:wrap;">
-          <button id="presetAnnuncio" type="button"
-            style="padding:8px 12px; border-radius:999px; border:1px solid rgba(255,255,255,.16); background:rgba(0,0,0,.22); color:#fff; font-weight:700; cursor:pointer;">
-            PRESET: ANNUNCIO
-          </button>
-
-          <button id="presetEvento" type="button"
-            style="padding:8px 12px; border-radius:999px; border:1px solid rgba(255,255,255,.16); background:rgba(0,0,0,.22); color:#fff; font-weight:700; cursor:pointer;">
-            PRESET: EVENTO
-          </button>
-
-          <button id="presetLink" type="button"
-            style="padding:8px 12px; border-radius:999px; border:1px solid rgba(255,255,255,.16); background:rgba(0,0,0,.22); color:#fff; font-weight:700; cursor:pointer;">
-            PRESET: LINK IMPORTANTE
-          </button>
-        </div>
-
-        <input id="postTitle" type="text"
-          placeholder="Titolo post neutro (es: Luna Vallyy - Messaggio del Pianeta Segreto)"
-          maxlength="80"
+      <!-- ✅ POST NEUTRO (13° evento separato) -->
+      <div class="admin-spot" style="margin-top:12px; display:grid; gap:8px;">
+        <input id="spotTitle" type="text"
+          placeholder="POST NEUTRO — Titolo (opzionale)"
           style="width:100%; padding:10px 12px; border-radius:12px; border:1px solid rgba(255,255,255,.15); background:rgba(0,0,0,.25); color:#fff;" />
 
-        <textarea id="postBody" rows="5"
-          placeholder="Testo post neutro - qui scrivi tu (Discord safe)"
+        <textarea id="spotBody" rows="4"
+          placeholder="POST NEUTRO — Testo (opzionale)"
           style="width:100%; padding:10px 12px; border-radius:12px; border:1px solid rgba(255,255,255,.15); background:rgba(0,0,0,.25); color:#fff; resize:vertical;"></textarea>
 
-        <input id="postLink" type="text"
-          placeholder="Link del post (opzionale) es: https://alexcaos75.github.io/oroscopo/"
+        <input id="spotLink" type="text"
+          placeholder="POST NEUTRO — Link (opzionale) es: https://alexcaos75.github.io/oroscopo/"
           style="width:100%; padding:10px 12px; border-radius:12px; border:1px solid rgba(255,255,255,.15); background:rgba(0,0,0,.25); color:#fff;" />
 
-        <input id="postImage" type="text"
-          placeholder="Immagine (opzionale) es: immagini/spot1.jpg oppure https://..."
+        <input id="spotImage" type="text"
+          placeholder="POST NEUTRO — Immagine/GIF (opzionale) es: immagini/spot1.gif oppure https://..."
           style="width:100%; padding:10px 12px; border-radius:12px; border:1px solid rgba(255,255,255,.15); background:rgba(0,0,0,.25); color:#fff;" />
 
-        <input id="postVideo" type="text"
-          placeholder="YouTube ID (opzionale) es: dQw4w9WgXcQ"
+        <input id="spotVideo" type="text"
+          placeholder="POST NEUTRO — Video YouTube ID (opzionale) es: dQw4w9WgXcQ"
           style="width:100%; padding:10px 12px; border-radius:12px; border:1px solid rgba(255,255,255,.15); background:rgba(0,0,0,.25); color:#fff;" />
 
-        <div style="font-size:12.5px; opacity:.85; line-height:1.35;">
-          Nota: il POST NEUTRO non usa segni zodiacali. Serve solo per creare un post elegante in Bacheca (con immagine o YouTube opzionali).
-        </div>
+        <input id="spotMusic" type="text"
+          placeholder="POST NEUTRO — Musica YouTube ID (opzionale) ASCOLTA/STOP invisibile + loop"
+          style="width:100%; padding:10px 12px; border-radius:12px; border:1px solid rgba(255,255,255,.15); background:rgba(0,0,0,.25); color:#fff;" />
       </div>
 
       <div class="admin-actions">
         <button id="saveAdmin" type="button">SALVA</button>
         <button id="postBacheca" type="button">POST OROSCOPO</button>
-
-        <!-- ✅ questo ora e' il POST NEUTRO (13° evento) -->
         <button id="postSpot" type="button">POST NEUTRO</button>
-
         <button id="copyDiscord" type="button">COPIA DISCORD</button>
+        <button id="copySpot" type="button">COPIA POST</button>
         <button id="closeAdmin" type="button">CHIUDI</button>
       </div>
 
@@ -166,47 +145,5 @@
 
   <script type="module" src="script.js?v=20251228-win"></script>
   <script type="module" src="chat-luna.js?v=20251228-win"></script>
-
-  <!-- ✅ Preset JS (solo UI) -->
-  <script>
-    // questi preset NON toccano il tuo script.js: riempiono solo i campi neutri.
-    function setPreset(title, body, link){
-      const t = document.getElementById("postTitle");
-      const b = document.getElementById("postBody");
-      const l = document.getElementById("postLink");
-      if (t) t.value = title || "";
-      if (b) b.value = body || "";
-      if (l) l.value = link || "";
-    }
-
-    document.addEventListener("click", (e) => {
-      const id = e.target && e.target.id;
-      if (!id) return;
-
-      if (id === "presetAnnuncio"){
-        setPreset(
-          "Luna Vallyy - Annuncio dal Pianeta Segreto",
-          "Il nostro oracolo ci accompagna.\n\nOggi il cielo apre una nuova porta.\nResta vicino alla Luna e segui il segnale.\n\nA presto.",
-          "https://alexcaos75.github.io/oroscopo/"
-        );
-      }
-
-      if (id === "presetEvento"){
-        setPreset(
-          "Luna Vallyy - Evento del Pianeta Segreto",
-          "Questa sera il destino si muove.\n\nPreparati: una scelta, una rivelazione, un segno.\n\nEntra e ascolta la Luna.",
-          "https://alexcaos75.github.io/oroscopo/"
-        );
-      }
-
-      if (id === "presetLink"){
-        setPreset(
-          "Luna Vallyy - Link Importante",
-          "Messaggio rapido dal Pianeta Segreto.\n\nApri il varco qui sotto.\n\nIl destino parla a chi sa ascoltare.",
-          "https://alexcaos75.github.io/oroscopo/"
-        );
-      }
-    });
-  </script>
 </body>
 </html>
