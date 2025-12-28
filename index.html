@@ -10,6 +10,12 @@
 
 <body>
 
+  <!-- ✅ MUSIC SANDBOX (INVINCIBILE)
+       Qui il tuo JS può creare/gestire l'iframe audio senza dipendere dall'HTML incollato. -->
+  <div id="psMusicSandbox"
+       style="position:fixed; left:-9999px; top:-9999px; width:1px; height:1px; overflow:hidden; display:block; visibility:hidden;">
+  </div>
+
   <!-- INTRO -->
   <div id="cosmicCurtain" aria-hidden="true">
     <div class="curtain-text">IL DESTINO SI RISVEGLIA</div>
@@ -60,6 +66,8 @@
   <div id="modal" class="modal hidden" aria-hidden="true">
     <div class="fullscreen-card" role="dialog" aria-modal="true">
       <button id="closeModal" class="close" aria-label="Chiudi scheda">&times;</button>
+
+      <!-- ✅ il cover lo gestiamo da CSS/JS, qui va bene -->
       <div id="fullscreenImage" class="fullscreen-image" aria-hidden="true"></div>
 
       <div class="oracle-text">
@@ -108,12 +116,13 @@
           placeholder="POST NEUTRO — Immagine/GIF (opzionale) es: immagini/spot1.gif oppure https://..."
           style="width:100%; padding:12px 14px; border-radius:14px; border:1px solid rgba(255,255,255,.14); background:rgba(0,0,0,.24); color:#fff;" />
 
+        <!-- ✅ ora puoi incollare: ID / link / iframe embed -->
         <input id="pnVideo" type="text"
-          placeholder="POST NEUTRO — Video YouTube (opzionale) ID o link"
+          placeholder="POST NEUTRO — Video YouTube (opzionale) ID / link / iframe embed"
           style="width:100%; padding:12px 14px; border-radius:14px; border:1px solid rgba(255,255,255,.14); background:rgba(0,0,0,.24); color:#fff;" />
 
         <input id="pnMusic" type="text"
-          placeholder="POST NEUTRO — Musica YouTube (opzionale) ID o link (ASCOLTA/STOP invisibile + loop)"
+          placeholder="POST NEUTRO — Musica YouTube (opzionale) ID / link / iframe embed (ASCOLTA/STOP + loop)"
           style="width:100%; padding:12px 14px; border-radius:14px; border:1px solid rgba(255,255,255,.14); background:rgba(0,0,0,.24); color:#fff;" />
 
         <!-- scelta video -->
