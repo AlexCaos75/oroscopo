@@ -363,7 +363,10 @@ async function postOroscopoToBacheca(signName) {
 }
 
 // ==========================
-// 🧾 POST SPOT (13° evento separato) — senza segni
+// 🧾 POST NEUTRO (13° evento) — NON legato ai segni
+// - titolo e testo li scrivi tu
+// - link / immagine / youtube opzionali
+// - la ruota NON lo pesca: e' solo admin
 // ==========================
 async function postSpotToBacheca() {
   if (!isAdmin) return alert("Solo ADMIN puo postare in bacheca.");
@@ -371,40 +374,40 @@ async function postSpotToBacheca() {
   const author = sanitizePlainASCII(window.LUNA.user || "Luna Vallyy");
   const oracle = "Oracolo di Pianeta Segreto";
 
-  const title = sanitizePlainASCII("Luna Vallyy - Oracolo di Pianeta Segreto");
-  const subtitle = sanitizePlainASCII("Il nostro oracolo ci accompagna. Messaggio pulito, pronto anche per Discord.");
+  const titleEl = document.getElementById("postTitle");
+  const bodyEl  = document.getElementById("postBody");
+  const linkEl  = document.getElementById("postLink");
+  const imgEl   = document.getElementById("postImage");
+  const vidEl   = document.getElementById("postVideo");
 
-  const body = sanitizePlainASCII(
-    "OROSCOPO DI LUNA\n\n" +
-    "Il destino parla a chi sa ascoltare.\n" +
-    "Oggi il cielo invita alla chiarezza,\n" +
-    "alla scelta consapevole,\n" +
-    "alla fiducia nel proprio cammino.\n\n" +
-    "Segui cio che senti vero."
-  );
+  let title = sanitizePlainASCII(titleEl?.value || "");
+  let body  = sanitizePlainASCII(bodyEl?.value || "");
+  let link  = sanitizePlainASCII(linkEl?.value || "");
+  let image = sanitizePlainASCII(imgEl?.value || "");
+  let video = sanitizePlainASCII(vidEl?.value || "");
 
-  const link = "https://alexcaos75.github.io/oroscopo/";
+  // default eleganti se lasci vuoto
+  if (!title) title = "Luna Vallyy - Oracolo di Pianeta Segreto";
+  if (!body)  body  = "Il nostro oracolo ci accompagna.\n\nQuando il cielo tace, ascolta il cuore.";
 
-  const imageInput = document.getElementById("spotImage");
-  const videoInput = document.getElementById("spotVideo");
+  // link: se vuoto mettiamo quello dell'oroscopo di luna (puoi cambiare)
+  if (!link) link = "https://alexcaos75.github.io/oroscopo/";
 
-  let image = sanitizePlainASCII(imageInput?.value || "");
-  let video = sanitizePlainASCII(videoInput?.value || "");
-
-  // fallback pool (facoltativo)
-  const IMAGE_POOL = ["immagini/spot1.jpg","immagini/spot2.jpg","immagini/spot3.jpg"];
-  const YT_POOL = ["dQw4w9WgXcQ"];
-
-  if (!image && IMAGE_POOL.length) image = IMAGE_POOL[Math.floor(Math.random() * IMAGE_POOL.length)];
-  if (!video && YT_POOL.length) video = YT_POOL[Math.floor(Math.random() * YT_POOL.length)];
+  // validate link (accetta http/https o relativo tipo ./index.html)
+  if (link && !/^https?:\/\//i.test(link) && !/^[./]/.test(link)) link = "https://alexcaos75.github.io/oroscopo/";
 
   // validate image (url assoluto o immagini/..)
   if (image && !/^https?:\/\//i.test(image) && !/^immagini\/[a-z0-9_\-./]+$/i.test(image)) image = "";
+
   // validate youtube id
   if (video && !/^[a-zA-Z0-9_-]{6,20}$/.test(video)) video = "";
 
+  // testo discord (pulito)
   const discordText = sanitizePlainASCII(
-    `${title}\n${subtitle}\n\n${body}\n\nLink: ${link}`
+    `${title}\n` +
+    `${oracle}\n\n` +
+    `${body}\n\n` +
+    `Link: ${link}`
   );
 
   const payload = {
@@ -412,23 +415,26 @@ async function postSpotToBacheca() {
     author,
     oracle,
     title,
-    subtitle,
+    subtitle: sanitizePlainASCII("Messaggio neutro dal Pianeta Segreto. Pronto anche per Discord."),
     text: discordText,
+    link,
     image: image || "",
     video: video || "",
-    link,
     tag: "Pianeta Segreto",
-    mode: "SPOT"
+    mode: "NEUTRO"
   };
 
   await set(ref(db, BACHECA_LATEST), payload);
 
-  // pulisci input per comodita
-  if (imageInput) imageInput.value = "";
-  if (videoInput) videoInput.value = "";
+  // pulizia campi
+  if (titleEl) titleEl.value = "";
+  if (bodyEl) bodyEl.value = "";
+  if (linkEl) linkEl.value = "";
+  if (imgEl) imgEl.value = "";
+  if (vidEl) vidEl.value = "";
 
-  lunaBot("Bacheca aggiornata: messaggio SPOT pubblicato.");
-  alert("POST SPOT OK: bacheca aggiornata.");
+  lunaBot("Bacheca aggiornata: POST NEUTRO pubblicato.");
+  alert("POST NEUTRO OK: bacheca aggiornata.");
 }
 
 // ==========================
@@ -831,3 +837,4 @@ function init() {
   window.LUNA.ensureDailyOroscopoUpToDate = ensureDailyOroscopoUpToDate;
   window.LUNA.postSpotToBacheca = postSpotToBacheca;
 }
+
