@@ -10,6 +10,7 @@
 // ✅ supporta OROSCOPO RICCO: stringa OR oggetto {testo, amore, lavoro, fortuna, consiglio}
 // ✅ MIGRAZIONE: window.LUNA.migrateTodayToRichFormat()
 // ✅ POST: Bacheca Pianeta Segreto + Copia Discord (testo pulito ASCII)
+// ✅ SPOT: evento separato (senza segni) con immagine + YouTube
 // ==========================
 
 const DEBUG = true;
@@ -264,7 +265,7 @@ function getBaseLink() {
 }
 
 // ==========================
-// 🧩 AUTO-UPDATE DAILY
+// 🧩 AUTO-UPDATE DAILY (12 segni sempre presenti)
 // ==========================
 let lastUpdateTry = 0;
 
@@ -281,7 +282,7 @@ async function ensureDailyOroscopoUpToDate() {
     return;
   }
 
-  // lock globale (anti-spam multi-client)
+  // lock globale
   const lockRef = ref(db, `ruota-lunare/meta/dailyInitLock/${today}`);
   await runTransaction(lockRef, (cur) => {
     if (cur && cur.locked) return;
@@ -296,7 +297,6 @@ async function ensureDailyOroscopoUpToDate() {
     await set(dailyRefToday, def);
     if (DEBUG) console.log("[ORO] created missing daily for", today);
   } else {
-    // patch: non sovrascrive admin, completa solo mancanti
     const cur = snapDaily.val() || {};
     const patch = {};
 
@@ -315,7 +315,6 @@ async function ensureDailyOroscopoUpToDate() {
           if (src[k] == null || src[k] === "") patch[`${sign}/${k}`] = dst[k];
         }
       }
-      // se e' stringa: la lasciamo (compat) e non la convertiamo automaticamente
     }
 
     if (Object.keys(patch).length > 0) {
@@ -327,7 +326,6 @@ async function ensureDailyOroscopoUpToDate() {
     }
   }
 
-  // current day pointers
   await set(ref(db, ORO_CURRENT_STR), today);
   await set(ref(db, ORO_CURRENT_PATH), { date: today, updatedAt: Date.now() });
 
@@ -341,7 +339,7 @@ async function ensureDailyOroscopoUpToDate() {
 function scheduleMidnightResync() {
   const now = new Date();
   const next = new Date(now);
-  next.setHours(24, 0, 5, 0); // 00:00:05
+  next.setHours(24, 0, 5, 0);
   const ms = next.getTime() - now.getTime();
 
   setTimeout(() => {
@@ -352,7 +350,7 @@ function scheduleMidnightResync() {
 }
 
 // ==========================
-// 🧿 MIGRAZIONE (1 click da console)
+// 🧿 MIGRAZIONE (console) — converte stringhe in oggetti ricchi
 // ==========================
 async function migrateTodayToRichFormat() {
   if (!isAdmin) return alert("Solo ADMIN puo migrare il daily.");
@@ -383,7 +381,7 @@ async function migrateTodayToRichFormat() {
     if (typeof v === "string") {
       const d = def[sign];
       patch[sign] = {
-        testo: v, // mantiene il testo esistente
+        testo: v,
         amore: d.amore,
         lavoro: d.lavoro,
         fortuna: d.fortuna,
@@ -409,7 +407,7 @@ async function migrateTodayToRichFormat() {
 }
 
 // ==========================
-// 🧾 POST BACHECA + COPIA DISCORD
+// 🧾 POST BACHECA (collegato al segno selezionato) — opzionale
 // ==========================
 async function postOroscopoToBacheca(signName) {
   if (!isAdmin) return alert("Solo ADMIN puo postare in bacheca.");
@@ -418,14 +416,13 @@ async function postOroscopoToBacheca(signName) {
   const day = CURRENT_DAY;
 
   const author = sanitizePlainASCII(window.LUNA.user || "Luna Vallyy");
-  const oracle = "Oracolo di PianetaSegreto";
+  const oracle = "Oracolo di Pianeta Segreto";
 
   const v = (oroscopo2026 && oroscopo2026[signName]) ? oroscopo2026[signName] : null;
   const formatted = formatHoroscopeForOutput(signName, v);
 
   const link = getBaseLink() + `?day=${encodeURIComponent(day)}&sign=${encodeURIComponent(signName)}`;
 
-  // SOLO TESTO + LINK (discord safe)
   const discordText = sanitizePlainASCII(
     `Luna Vallyy - ${oracle}\n` +
     `Giorno: ${day}\n` +
@@ -436,25 +433,94 @@ async function postOroscopoToBacheca(signName) {
 
   const payload = {
     at: Date.now(),
-    day,
-    sign: sanitizePlainASCII(signName),
     author,
     oracle,
+    title: sanitizePlainASCII(`Luna Vallyy - ${oracle}`),
+    subtitle: sanitizePlainASCII("Messaggio dal Pianeta Segreto. Pronto anche per Discord."),
     text: discordText,
-    link
+    link,
+    tag: "Pianeta Segreto",
+    mode: "OROSCOPO"
   };
 
   await set(ref(db, BACHECA_LATEST), payload);
 
-  lunaBot(`Bacheca aggiornata: ${signName} (${day}).`);
+  lunaBot(`Bacheca aggiornata (OROSCOPO): ${signName}.`);
   alert("POST OK: bacheca aggiornata.");
 }
 
+// ==========================
+// 🧾 POST SPOT (13° evento separato) — senza segni
+// ==========================
+async function postSpotToBacheca() {
+  if (!isAdmin) return alert("Solo ADMIN puo postare in bacheca.");
+
+  const author = sanitizePlainASCII(window.LUNA.user || "Luna Vallyy");
+  const oracle = "Oracolo di Pianeta Segreto";
+
+  const title = sanitizePlainASCII("Luna Vallyy - Oracolo di Pianeta Segreto");
+  const subtitle = sanitizePlainASCII("Il nostro oracolo ci accompagna. Messaggio pulito, pronto anche per Discord.");
+
+  const body = sanitizePlainASCII(
+    "OROSCOPO DI LUNA\n\n" +
+    "Il destino parla a chi sa ascoltare.\n" +
+    "Oggi il cielo invita alla chiarezza,\n" +
+    "alla scelta consapevole,\n" +
+    "alla fiducia nel proprio cammino.\n\n" +
+    "Segui cio che senti vero."
+  );
+
+  const link = "https://alexcaos75.github.io/oroscopo/";
+
+  const imageInput = document.getElementById("spotImage");
+  const videoInput = document.getElementById("spotVideo");
+
+  let image = sanitizePlainASCII(imageInput?.value || "");
+  let video = sanitizePlainASCII(videoInput?.value || "");
+
+  const IMAGE_POOL = ["immagini/spot1.jpg","immagini/spot2.jpg","immagini/spot3.jpg"];
+  const YT_POOL = ["dQw4w9WgXcQ"];
+
+  if (!image && IMAGE_POOL.length) image = IMAGE_POOL[Math.floor(Math.random() * IMAGE_POOL.length)];
+  if (!video && YT_POOL.length) video = YT_POOL[Math.floor(Math.random() * YT_POOL.length)];
+
+  if (video && !/^[a-zA-Z0-9_-]{6,20}$/.test(video)) video = "";
+
+  const discordText = sanitizePlainASCII(
+    `${title}\n` +
+    `${subtitle}\n\n` +
+    `${body}\n\n` +
+    `Link: ${link}`
+  );
+
+  const payload = {
+    at: Date.now(),
+    author,
+    oracle,
+    title,
+    subtitle,
+    text: discordText,
+    image: image || "",
+    video: video || "",
+    link,
+    tag: "Pianeta Segreto",
+    mode: "SPOT"
+  };
+
+  await set(ref(db, BACHECA_LATEST), payload);
+
+  lunaBot("Bacheca aggiornata: messaggio SPOT pubblicato.");
+  alert("POST SPOT OK: bacheca aggiornata.");
+}
+
+// ==========================
+// 📋 COPIA DISCORD (per il segno selezionato) — testo pulito
+// ==========================
 async function copyDiscordMessage(signName) {
   if (!CURRENT_DAY) return alert("CURRENT_DAY non disponibile.");
 
   const day = CURRENT_DAY;
-  const oracle = "Oracolo di PianetaSegreto";
+  const oracle = "Oracolo di Pianeta Segreto";
 
   const v = (oroscopo2026 && oroscopo2026[signName]) ? oroscopo2026[signName] : null;
   const formatted = formatHoroscopeForOutput(signName, v);
@@ -473,7 +539,6 @@ async function copyDiscordMessage(signName) {
     await navigator.clipboard.writeText(msg);
     alert("Copiato negli appunti (Discord pronto).");
   } catch {
-    // fallback (alcuni browser/hosting bloccano clipboard API)
     const ta = document.createElement("textarea");
     ta.value = msg;
     document.body.appendChild(ta);
@@ -715,7 +780,7 @@ function idlePulse() {
 }
 
 // ==========================
-// 🌌 MODALE
+// 🌌 MODALE OROSCOPO
 // ==========================
 function initModal() {
   const closeBtn = document.getElementById("closeModal");
@@ -766,8 +831,8 @@ function initAdmin() {
   const save   = document.getElementById("saveAdmin");
   const close  = document.getElementById("closeAdmin");
 
-  // nuovi tasti
-  const postBtn = document.getElementById("postBacheca");
+  const postBtn = document.getElementById("postBacheca"); // oroscopo (opzionale)
+  const spotBtn = document.getElementById("postSpot");    // SPOT (evento separato)
   const copyBtn = document.getElementById("copyDiscord");
 
   if (!select || !text || !btn || !save || !close) return;
@@ -790,11 +855,12 @@ function initAdmin() {
     if (!CURRENT_DAY) return alert("Giorno corrente non disponibile.");
 
     const existing = oroscopo2026?.[select.value];
+    const clean = sanitizePlainASCII(text.value);
 
     if (existing && typeof existing === "object") {
-      await update(ref(db, `${ORO_DAILY_BASE}/${CURRENT_DAY}/${select.value}`), { testo: sanitizePlainASCII(text.value) });
+      await update(ref(db, `${ORO_DAILY_BASE}/${CURRENT_DAY}/${select.value}`), { testo: clean });
     } else {
-      await update(ref(db, `${ORO_DAILY_BASE}/${CURRENT_DAY}`), { [select.value]: sanitizePlainASCII(text.value) });
+      await update(ref(db, `${ORO_DAILY_BASE}/${CURRENT_DAY}`), { [select.value]: clean });
     }
 
     await update(ref(db, `${ORO_DAILY_BASE}/${CURRENT_DAY}`), { updatedAt: Date.now() });
@@ -806,6 +872,13 @@ function initAdmin() {
     postBtn.onclick = async () => {
       if (!isAdmin) return alert("Prima attiva ADMIN.");
       await postOroscopoToBacheca(select.value);
+    };
+  }
+
+  if (spotBtn) {
+    spotBtn.onclick = async () => {
+      if (!isAdmin) return alert("Prima attiva ADMIN.");
+      await postSpotToBacheca();
     };
   }
 
@@ -832,7 +905,7 @@ function initAdmin() {
 }
 
 // ==========================
-// 🤖 LUNA BOT
+// 🤖 LUNA BOT (chat)
 // ==========================
 function lunaBot(text) {
   const now = Date.now();
@@ -872,4 +945,5 @@ function init() {
   // export comodi per console
   window.LUNA.migrateTodayToRichFormat = migrateTodayToRichFormat;
   window.LUNA.ensureDailyOroscopoUpToDate = ensureDailyOroscopoUpToDate;
+  window.LUNA.postSpotToBacheca = postSpotToBacheca;
 }
