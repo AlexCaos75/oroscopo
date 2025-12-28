@@ -5,10 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#00060d" />
   <title>Ruota Lunare – Sentenza</title>
-  <link rel="stylesheet" href="./style.css?v=20251228-win" />
+  <link rel="stylesheet" href="style.css?v=20251228-capolavoro" />
 </head>
 
 <body>
+
   <!-- INTRO -->
   <div id="cosmicCurtain" aria-hidden="true">
     <div class="curtain-text">IL DESTINO SI RISVEGLIA</div>
@@ -19,6 +20,7 @@
     <div class="login-panel" role="dialog" aria-modal="true">
       <h2>Benvenuto</h2>
       <p>Inserisci il tuo nome per entrare</p>
+
       <input id="loginName" type="text" placeholder="Nickname" maxlength="20" autocomplete="off" aria-label="Nickname" />
       <button id="loginBtn" type="button">ENTRA</button>
     </div>
@@ -26,7 +28,8 @@
 
   <!-- APP -->
   <main class="app hidden" role="main">
-    <section class="cards-zone" aria-label="Carte sinistra">
+
+    <section class="cards-zone" aria-label="Carte zodiacali sinistra">
       <div id="cardsLeft" class="cards"></div>
     </section>
 
@@ -42,13 +45,13 @@
         <button id="adminBtn" type="button" aria-label="Area amministratore">ADMIN</button>
       </div>
 
-      <!-- ✅ stato scelti -->
-      <div id="pickStatus" class="pick-status">scelti 0/12</div>
+      <div id="roundInfo" style="margin-top:10px; font-weight:800; opacity:.9; letter-spacing:.4px;"></div>
     </section>
 
-    <section class="cards-zone" aria-label="Carte destra">
+    <section class="cards-zone" aria-label="Carte zodiacali destra">
       <div id="cardsRight" class="cards"></div>
     </section>
+
   </main>
 
   <!-- MODALE OROSCOPO -->
@@ -65,60 +68,103 @@
         <p id="modalHint"></p>
 
         <h3>Oroscopo 2026</h3>
-        <pre id="oroscopo2026" class="oracle-pre"></pre>
+        <p id="oroscopo2026"></p>
       </div>
     </div>
   </div>
 
-  <!-- MODALE ADMIN -->
+  <!-- MODALE ADMIN (RIORDINATO + POST NEUTRO + COPIA POST) -->
   <div id="adminModal" class="modal hidden" aria-hidden="true">
     <div class="admin-panel" role="dialog" aria-modal="true">
+
       <h2>Editor Oroscopo 2026</h2>
 
+      <!-- OR0SCOPO EDITOR -->
       <label class="sr-only" for="adminSelect">Segno</label>
       <select id="adminSelect"></select>
 
       <label class="sr-only" for="adminText">Testo oroscopo</label>
       <textarea id="adminText" placeholder="Scrivi qui l'oroscopo..." rows="6"></textarea>
 
-      <!-- ✅ POST NEUTRO (indipendente dalla ruota) -->
-      <div class="admin-divider"></div>
-      <h3 class="admin-subtitle">Post Neutro (indipendente)</h3>
+      <hr style="border:0;height:1px;background:rgba(255,255,255,.12);margin:14px 0;" />
 
-      <input id="neutralTitle" class="admin-input" type="text" placeholder="POST NEUTRO — Titolo (opzionale)" />
-      <textarea id="neutralBody" class="admin-textarea" rows="4" placeholder="POST NEUTRO — Testo (opzionale)"></textarea>
+      <!-- POST NEUTRO (INDIPENDENTE) -->
+      <div style="display:grid; gap:10px;">
+        <div style="font-weight:900; letter-spacing:.4px; opacity:.95;">POST NEUTRO (indipendente)</div>
 
-      <input id="neutralLink" class="admin-input" type="text" placeholder="POST NEUTRO — Link (opzionale) es: https://alexcaos75.github.io/oroscopo/" />
-      <input id="neutralImage" class="admin-input" type="text" placeholder="POST NEUTRO — Immagine/GIF (opzionale) es: immagini/spot1.gif oppure https://..." />
-      <input id="neutralVideo" class="admin-input" type="text" placeholder="POST NEUTRO — Video YouTube (ID o link) (opzionale)" />
+        <input id="pnTitle" type="text"
+          placeholder="POST NEUTRO — Titolo (opzionale)"
+          style="width:100%; padding:12px 14px; border-radius:14px; border:1px solid rgba(255,255,255,.14); background:rgba(0,0,0,.24); color:#fff;" />
 
-      <div class="admin-row">
-        <select id="videoMode" class="admin-select">
-          <option value="visible">Video visibile</option>
-          <option value="none">Nessun video</option>
-        </select>
+        <textarea id="pnBody" rows="4"
+          placeholder="POST NEUTRO — Testo (opzionale)"
+          style="width:100%; padding:12px 14px; border-radius:14px; border:1px solid rgba(255,255,255,.14); background:rgba(0,0,0,.24); color:#fff;"></textarea>
 
-        <input id="neutralMusic" class="admin-input" type="text" placeholder="Musica YouTube (ID o link) (opzionale) — ASCOLTA/STOP invisibile + loop" />
+        <input id="pnLink" type="text"
+          placeholder="POST NEUTRO — Link (opzionale) es: https://alexcaos75.github.io/oroscopo/"
+          style="width:100%; padding:12px 14px; border-radius:14px; border:1px solid rgba(255,255,255,.14); background:rgba(0,0,0,.24); color:#fff;" />
+
+        <input id="pnImage" type="text"
+          placeholder="POST NEUTRO — Immagine/GIF (opzionale) es: immagini/spot1.gif oppure https://..."
+          style="width:100%; padding:12px 14px; border-radius:14px; border:1px solid rgba(255,255,255,.14); background:rgba(0,0,0,.24); color:#fff;" />
+
+        <input id="pnVideo" type="text"
+          placeholder="POST NEUTRO — Video YouTube (opzionale) ID o link"
+          style="width:100%; padding:12px 14px; border-radius:14px; border:1px solid rgba(255,255,255,.14); background:rgba(0,0,0,.24); color:#fff;" />
+
+        <input id="pnMusic" type="text"
+          placeholder="POST NEUTRO — Musica YouTube (opzionale) ID o link (ASCOLTA/STOP invisibile + loop)"
+          style="width:100%; padding:12px 14px; border-radius:14px; border:1px solid rgba(255,255,255,.14); background:rgba(0,0,0,.24); color:#fff;" />
+
+        <!-- scelta video -->
+        <div style="display:flex; gap:16px; align-items:center; font-size:13px; opacity:.95;">
+          <label style="display:flex; gap:8px; align-items:center; cursor:pointer; font-weight:800;">
+            <input type="radio" name="pnVideoMode" value="visible" checked />
+            Video visibile
+          </label>
+          <label style="display:flex; gap:8px; align-items:center; cursor:pointer; font-weight:800;">
+            <input type="radio" name="pnVideoMode" value="hidden" />
+            Solo musica (invisibile)
+          </label>
+        </div>
       </div>
 
-      <div class="admin-actions">
+      <div class="admin-actions" style="margin-top:14px;">
         <button id="saveAdmin" type="button">SALVA</button>
-        <button id="postOroscopo" type="button">POST OROSCOPO</button>
-        <button id="postNeutro" type="button">POST NEUTRO</button>
+        <button id="postBacheca" type="button">POST OROSCOPO</button>
+        <button id="postNeutral" type="button">POST NEUTRO</button>
         <button id="copyDiscord" type="button">COPIA DISCORD</button>
         <button id="copyPost" type="button">COPIA POST</button>
         <button id="closeAdmin" type="button">CHIUDI</button>
       </div>
 
-      <div class="admin-links">
+      <div class="admin-links" style="margin-top:10px; font-size:13px; opacity:.95;">
         Bacheca Pianeta Segreto:
         <a href="./bacheca.html" target="_blank" rel="noopener">apri</a>
       </div>
+
     </div>
   </div>
 
-  <!-- (facoltativo) CHAT: se hai già chat-luna.js tienilo -->
-  <script type="module" src="./script.js?v=20251228-win"></script>
-  <!-- <script type="module" src="./chat-luna.js?v=20251228-win"></script> -->
+  <!-- CHAT -->
+  <div id="chatLuna" class="chat-luna collapsed" aria-live="polite" aria-label="Chat pubblica della Luna">
+    <div class="chat-header" id="chatHeader">
+      <span>LUNA - Chat Pubblica</span>
+      <div class="chat-actions">
+        <button id="chatReset" type="button" title="Reset chat" aria-label="Reset chat">RESET</button>
+        <span id="chatToggle" aria-hidden="true">+</span>
+      </div>
+    </div>
+
+    <div id="chatMessages" class="chat-messages" role="log" aria-relevant="additions"></div>
+
+    <div class="chat-input">
+      <input id="chatInput" type="text" placeholder="Scrivi alla Luna..." maxlength="160" autocomplete="off" aria-label="Messaggio chat" />
+      <button id="chatSend" type="button" aria-label="Invia messaggio">INVIA</button>
+    </div>
+  </div>
+
+  <script type="module" src="script.js?v=20251228-capolavoro"></script>
+  <script type="module" src="chat-luna.js?v=20251228-capolavoro"></script>
 </body>
 </html>
