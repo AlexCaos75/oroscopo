@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#00060d" />
+  <title>Bacheca Pianeta Segreto</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    body { padding: 18px; }
+    .b-wrap { max-width: 900px; margin: 0 auto; }
+    .b-card { border: 1px solid rgba(255,255,255,.12); border-radius: 14px; padding: 16px; }
+    .b-meta { opacity: .8; font-size: 13px; margin-bottom: 10px; }
+    pre { white-space: pre-wrap; word-break: break-word; }
+  </style>
+</head>
+<body>
+  <div class="b-wrap">
+    <h1>Bacheca Pianeta Segreto</h1>
+    <p style="opacity:.85">Ultimo messaggio pubblicato da <b>Luna Vallyy</b> (testo pulito, pronto anche per Discord).</p>
+
+    <div class="b-card">
+      <div class="b-meta" id="bMeta">Caricamento...</div>
+      <pre id="bText"></pre>
+      <div style="margin-top:10px;">
+        <a id="bLink" href="index.html" target="_blank" rel="noopener">Apri link</a>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="bacheca.js?v=20251228-capolavoro"></script>
+</body>
+</html>

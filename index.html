@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#00060d" />
+  <title>Ruota Lunare – Sentenza</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+
+  <div id="cosmicCurtain" aria-hidden="true">
+    <div class="curtain-text">IL DESTINO SI RISVEGLIA</div>
+  </div>
+
+  <div id="loginModal" class="login-modal hidden" aria-hidden="false">
+    <div class="login-panel" role="dialog" aria-modal="true">
+      <h2>🌙 Benvenuto</h2>
+      <p>Inserisci il tuo nome per entrare</p>
+
+      <input id="loginName" type="text" placeholder="Nickname" maxlength="20" autocomplete="off" aria-label="Nickname" />
+      <button id="loginBtn" type="button">ENTRA</button>
+    </div>
+  </div>
+
+  <main class="app hidden" role="main">
+    <section class="cards-zone" aria-label="Carte zodiacali sinistra">
+      <div id="cardsLeft" class="cards"></div>
+    </section>
+
+    <section class="wheel-zone" aria-label="Ruota del destino">
+      <div class="wheel-glow" aria-hidden="true"></div>
+
+      <div id="wheel" class="wheel idle" aria-live="off" aria-label="Ruota">
+        <div class="wheel-core" aria-hidden="true">🌙</div>
+      </div>
+
+      <div class="controls hidden" id="controls" aria-label="Comandi">
+        <button id="spin" type="button" aria-label="Avvia la ruota">SCEGLI</button>
+        <button id="adminBtn" type="button" aria-label="Area amministratore">ADMIN</button>
+      </div>
+    </section>
+
+    <section class="cards-zone" aria-label="Carte zodiacali destra">
+      <div id="cardsRight" class="cards"></div>
+    </section>
+  </main>
+
+  <div id="modalBackdrop" class="modal-backdrop hidden" aria-hidden="true"></div>
+
+  <div id="modal" class="modal hidden" aria-hidden="true">
+    <div class="fullscreen-card" role="dialog" aria-modal="true">
+      <button id="closeModal" class="close" aria-label="Chiudi scheda">&times;</button>
+      <div id="fullscreenImage" class="fullscreen-image" aria-hidden="true"></div>
+
+      <div class="oracle-text">
+        <h2 id="modalTitle"></h2>
+        <p id="modalLore"></p>
+        <p id="modalHint"></p>
+
+        <h3>Oroscopo 2026</h3>
+        <p id="oroscopo2026"></p>
+      </div>
+    </div>
+  </div>
+
+  <div id="adminModal" class="modal hidden" aria-hidden="true">
+    <div class="admin-panel" role="dialog" aria-modal="true">
+      <h2>Editor Oroscopo 2026</h2>
+
+      <label class="sr-only" for="adminSelect">Segno</label>
+      <select id="adminSelect"></select>
+
+      <label class="sr-only" for="adminText">Testo oroscopo</label>
+      <textarea id="adminText" placeholder="Scrivi qui l'oroscopo..." rows="6"></textarea>
+
+      <div class="admin-actions">
+        <button id="saveAdmin" type="button">Salva</button>
+
+        <!-- ✅ CAPOLAVORO: tasti post -->
+        <button id="postBacheca" type="button">POST BACHECA</button>
+        <button id="copyDiscord" type="button">COPIA DISCORD</button>
+
+        <button id="closeAdmin" type="button">Chiudi</button>
+      </div>
+
+      <!-- link rapido -->
+      <div style="margin-top:10px; font-size:13px; opacity:.9;">
+        Bacheca Pianeta Segreto:
+        <a href="bacheca.html" target="_blank" rel="noopener">apri</a>
+      </div>
+    </div>
+  </div>
+
+  <div id="chatLuna" class="chat-luna collapsed" aria-live="polite" aria-label="Chat pubblica della Luna">
+    <div class="chat-header" id="chatHeader">
+      <span>🌙 LUNA – Chat Pubblica</span>
+      <div class="chat-actions">
+        <button id="chatReset" type="button" title="Reset chat" aria-label="Reset chat">⟲</button>
+        <span id="chatToggle" aria-hidden="true">+</span>
+      </div>
+    </div>
+
+    <div id="chatMessages" class="chat-messages" role="log" aria-relevant="additions"></div>
+
+    <div class="chat-input">
+      <input id="chatInput" type="text" placeholder="Scrivi alla Luna..." maxlength="160" autocomplete="off" aria-label="Messaggio chat" />
+      <button id="chatSend" type="button" aria-label="Invia messaggio">➤</button>
+    </div>
+  </div>
+
+  <script type="module" src="script.js?v=20251228-capolavoro"></script>
+  <script type="module" src="chat-luna.js?v=20251228a"></script>
+</body>
+</html>

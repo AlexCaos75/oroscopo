@@ -1,0 +1,2 @@
+2025-12-28T09:17:21+01:00 daily=0 curObj=0 curStr=0
+2025-12-28T09:20:06+01:00 daily=0(curl_error: CONNECT tunnel failed, response 403) curObj=0(curl_error: CONNECT tunnel failed, response 403) curStr=0(curl_error: CONNECT tunnel failed, response 403)
