@@ -630,4 +630,27 @@ body{
   opacity:.35;
   filter: grayscale(.7) blur(.2px);
 }
+/* Segni già usciti (non ripetibili nel round) */
+.card.picked{
+  filter: grayscale(0.15) saturate(0.75);
+  opacity: .62;
+  outline: 2px solid rgba(255,255,255,.16);
+  box-shadow: inset 0 0 0 2px rgba(0,0,0,.45);
+  position: relative;
+}
+.card.picked::after{
+  content:"SCELTO";
+  position:absolute;
+  left:10px; top:10px;
+  padding:6px 10px;
+  border-radius:999px;
+  font-weight:900;
+  font-size:11px;
+  letter-spacing:.5px;
+  background: rgba(0,0,0,.55);
+  border:1px solid rgba(255,255,255,.18);
+  color: rgba(255,255,255,.92);
+  backdrop-filter: blur(8px);
+}
+
 
