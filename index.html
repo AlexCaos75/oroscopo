@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#00060d" />
   <title>Ruota Lunare – Sentenza</title>
-  <link rel="stylesheet" href="style.css?v=20251228-capolavoro" />
+  <link rel="stylesheet" href="style.css?v=20251228-win" />
 </head>
 
 <body>
@@ -21,14 +21,7 @@
       <h2>Benvenuto</h2>
       <p>Inserisci il tuo nome per entrare</p>
 
-      <input
-        id="loginName"
-        type="text"
-        placeholder="Nickname"
-        maxlength="20"
-        autocomplete="off"
-        aria-label="Nickname"
-      />
+      <input id="loginName" type="text" placeholder="Nickname" maxlength="20" autocomplete="off" aria-label="Nickname" />
       <button id="loginBtn" type="button">ENTRA</button>
     </div>
   </div>
@@ -36,12 +29,10 @@
   <!-- APP -->
   <main class="app hidden" role="main">
 
-    <!-- SINISTRA -->
     <section class="cards-zone" aria-label="Carte zodiacali sinistra">
       <div id="cardsLeft" class="cards"></div>
     </section>
 
-    <!-- RUOTA -->
     <section class="wheel-zone" aria-label="Ruota del destino">
       <div class="wheel-glow" aria-hidden="true"></div>
 
@@ -55,7 +46,6 @@
       </div>
     </section>
 
-    <!-- DESTRA -->
     <section class="cards-zone" aria-label="Carte zodiacali destra">
       <div id="cardsRight" class="cards"></div>
     </section>
@@ -92,17 +82,25 @@
       <label class="sr-only" for="adminText">Testo oroscopo</label>
       <textarea id="adminText" placeholder="Scrivi qui l'oroscopo..." rows="6"></textarea>
 
+      <!-- ✅ SPOT (13° evento) -->
+      <div style="margin-top:10px; display:grid; gap:8px;">
+        <input id="spotImage" type="text"
+          placeholder="SPOT immagine (opzionale) es: immagini/spot1.jpg oppure https://..."
+          style="width:100%; padding:10px 12px; border-radius:12px; border:1px solid rgba(255,255,255,.15); background:rgba(0,0,0,.25); color:#fff;" />
+
+        <input id="spotVideo" type="text"
+          placeholder="SPOT YouTube ID (opzionale) es: dQw4w9WgXcQ"
+          style="width:100%; padding:10px 12px; border-radius:12px; border:1px solid rgba(255,255,255,.15); background:rgba(0,0,0,.25); color:#fff;" />
+      </div>
+
       <div class="admin-actions">
         <button id="saveAdmin" type="button">SALVA</button>
-
-        <!-- CAPOLAVORO: tasti post -->
-        <button id="postBacheca" type="button">POST BACHECA</button>
+        <button id="postBacheca" type="button">POST OROSCOPO</button>
+        <button id="postSpot" type="button">POST SPOT</button>
         <button id="copyDiscord" type="button">COPIA DISCORD</button>
-
         <button id="closeAdmin" type="button">CHIUDI</button>
       </div>
 
-      <!-- link rapido -->
       <div class="admin-links" style="margin-top:10px; font-size:13px; opacity:.9;">
         Bacheca Pianeta Segreto:
         <a href="./bacheca.html" target="_blank" rel="noopener">apri</a>
@@ -123,21 +121,12 @@
     <div id="chatMessages" class="chat-messages" role="log" aria-relevant="additions"></div>
 
     <div class="chat-input">
-      <input
-        id="chatInput"
-        type="text"
-        placeholder="Scrivi alla Luna..."
-        maxlength="160"
-        autocomplete="off"
-        aria-label="Messaggio chat"
-      />
+      <input id="chatInput" type="text" placeholder="Scrivi alla Luna..." maxlength="160" autocomplete="off" aria-label="Messaggio chat" />
       <button id="chatSend" type="button" aria-label="Invia messaggio">INVIA</button>
     </div>
   </div>
 
-  <!-- SCRIPT -->
-  <script type="module" src="script.js?v=20251228-capolavoro"></script>
-  <script type="module" src="chat-luna.js?v=20251228-capolavoro"></script>
-
+  <script type="module" src="script.js?v=20251228-win"></script>
+  <script type="module" src="chat-luna.js?v=20251228-win"></script>
 </body>
 </html>
