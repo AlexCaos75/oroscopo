@@ -7,11 +7,10 @@
 // ✅ fallback giorno locale
 // ✅ auto daily init + lock globale (1 volta al giorno)
 // ✅ Oroscopo ricco compatibile
-// ✅ POST bacheca: OR0SCOPO + POST NEUTRO (indipendente)
-// ✅ COPIA POST: HTML incollabile (img/gif + video o musica invisibile)
-// ✅ COPIA POST ROBUSTA: NO <script>, NO onclick (bacheche safe)
-// ✅ Bacheca: handler globale per ASCOLTA/STOP su post incollati
-// ✅ GIF/IMG: cover 100%
+// ✅ POST bacheca: OROSCOPO + POST NEUTRO (indipendente)
+// ✅ COPIA POST: genera HTML incollabile (immagine/gif COVER + video o musica invisibile)
+// ✅ INPUT: accetta LINK oppure CODICE INCORPORAMENTO (iframe) e ricava ID automaticamente
+// ✅ Musica: usa <div style="display:block; visibility:hidden"> con iframe (più compatibile) + allow autoplay
 // ==========================
 
 const DEBUG = true;
@@ -66,6 +65,8 @@ const ORO_CURRENT_PATH = "ruota-lunare/oroscopiCurrent";
 const ORO_CURRENT_STR  = "ruota-lunare/oroscopiCurrentDate";
 const ORO_DAILY_BASE   = "ruota-lunare/oroscopiDaily";
 const BACHECA_LATEST   = "ruota-lunare/bacheca/latest";
+
+// 🔥 RUOTA (senza ripetizioni) — stato unico
 const SPIN_STATE_PATH  = "ruota-lunare/spinState";
 
 // ==========================
@@ -78,18 +79,18 @@ const ADMIN_PASSWORD = "oracolo2026";
 let CURRENT_DAY = null;
 
 const SIGNS = [
-  { name:"Ariete", img:"p01.png", lore:"Inizio, energia", hint:"Coraggio" },
-  { name:"Toro", img:"p02.png", lore:"Stabilita", hint:"Determinazione" },
-  { name:"Gemelli", img:"p03.png", lore:"Comunicazione", hint:"Flessibilita" },
-  { name:"Cancro", img:"p04.png", lore:"Emozione", hint:"Cura" },
-  { name:"Leone", img:"p05.png", lore:"Leadership", hint:"Potere" },
-  { name:"Vergine", img:"p06.png", lore:"Precisione", hint:"Ordine" },
-  { name:"Bilancia", img:"p07.png", lore:"Equilibrio", hint:"Giustizia" },
-  { name:"Scorpione", img:"p08.png", lore:"Mistero", hint:"Trasformazione" },
+  { name:"Ariete",     img:"p01.png", lore:"Inizio, energia", hint:"Coraggio" },
+  { name:"Toro",       img:"p02.png", lore:"Stabilita", hint:"Determinazione" },
+  { name:"Gemelli",    img:"p03.png", lore:"Comunicazione", hint:"Flessibilita" },
+  { name:"Cancro",     img:"p04.png", lore:"Emozione", hint:"Cura" },
+  { name:"Leone",      img:"p05.png", lore:"Leadership", hint:"Potere" },
+  { name:"Vergine",    img:"p06.png", lore:"Precisione", hint:"Ordine" },
+  { name:"Bilancia",   img:"p07.png", lore:"Equilibrio", hint:"Giustizia" },
+  { name:"Scorpione",  img:"p08.png", lore:"Mistero", hint:"Trasformazione" },
   { name:"Sagittario", img:"p09.png", lore:"Avventura", hint:"Verita" },
   { name:"Capricorno", img:"p10.png", lore:"Disciplina", hint:"Struttura" },
-  { name:"Acquario", img:"p11.png", lore:"Visione", hint:"Rivoluzione" },
-  { name:"Pesci", img:"p12.png", lore:"Sogno", hint:"Intuizione" }
+  { name:"Acquario",   img:"p11.png", lore:"Visione", hint:"Rivoluzione" },
+  { name:"Pesci",      img:"p12.png", lore:"Sogno", hint:"Intuizione" }
 ];
 
 let oroscopo2026 = {};
@@ -114,7 +115,7 @@ function parseCurrentDayFromDb(v) {
 }
 
 // ==========================
-// 🧼 SANITIZER ASCII
+// 🧼 SANITIZER ASCII (NO STRANI / DISCORD SAFE)
 // ==========================
 function sanitizePlainASCII(input) {
   let s = String(input ?? "");
@@ -144,21 +145,49 @@ function normalizeLink(raw) {
 function extractYouTubeId(input) {
   const s = String(input || "").trim();
   if (!s) return "";
+
+  // Se mi incolli un iframe o un embed code -> estrai src e poi ID
+  const iframeSrc = extractYouTubeSrcFromEmbedCode(s);
+  if (iframeSrc) {
+    const id = extractYouTubeIdFromUrl(iframeSrc);
+    if (id) return id;
+  }
+
+  // se e' gia' un ID
   if (/^[a-zA-Z0-9_-]{6,20}$/.test(s)) return s;
 
+  // URL normale
+  return extractYouTubeIdFromUrl(s);
+}
+
+function extractYouTubeIdFromUrl(url) {
+  const s = String(url || "").trim();
+  if (!s) return "";
+
+  // youtu.be/ID
   let m = s.match(/youtu\.be\/([a-zA-Z0-9_-]{6,20})/i);
   if (m) return m[1];
 
+  // youtube.com/watch?v=ID
   m = s.match(/[?&]v=([a-zA-Z0-9_-]{6,20})/i);
   if (m) return m[1];
 
+  // youtube.com/embed/ID
   m = s.match(/\/embed\/([a-zA-Z0-9_-]{6,20})/i);
   if (m) return m[1];
 
+  // music.youtube.com / shorts
   m = s.match(/\/shorts\/([a-zA-Z0-9_-]{6,20})/i);
   if (m) return m[1];
 
   return "";
+}
+
+function extractYouTubeSrcFromEmbedCode(code) {
+  const s = String(code || "");
+  // Cerca src="...." dentro un iframe
+  const m = s.match(/<iframe[^>]+src=["']([^"']+)["']/i);
+  return m ? m[1] : "";
 }
 
 function safeImg(img) {
@@ -166,7 +195,7 @@ function safeImg(img) {
 }
 
 // ==========================
-// 🌟 DEFAULT OROSCOPO RICCO
+// 🌟 DEFAULT OROSCOPO RICCO (ASCII safe)
 // ==========================
 function buildDefaultDailyPayload() {
   const base = {
@@ -187,7 +216,7 @@ function buildDefaultDailyPayload() {
 }
 
 // ==========================
-// 🧩 FORMAT OUTPUT
+// 🧩 FORMAT OUTPUT (stringa o oggetto)
 // ==========================
 function formatHoroscopeForOutput(signName, value) {
   if (typeof value === "string") return value;
@@ -253,12 +282,10 @@ async function ensureDailyOroscopoUpToDate() {
 
     for (const sign of Object.keys(def)) {
       if (sign === "updatedAt") continue;
-
       if (cur[sign] == null) {
         patch[sign] = def[sign];
         continue;
       }
-
       if (typeof cur[sign] === "object" && cur[sign] !== null) {
         const src = cur[sign];
         const dst = def[sign];
@@ -293,6 +320,54 @@ function scheduleMidnightResync() {
     ensureDailyOroscopoUpToDate().catch(()=>{});
     scheduleMidnightResync();
   }, ms);
+}
+
+// ==========================
+// 🧿 MIGRAZIONE (console)
+// ==========================
+async function migrateTodayToRichFormat() {
+  if (!isAdmin) return alert("Solo ADMIN puo migrare il daily.");
+  if (!CURRENT_DAY) return alert("CURRENT_DAY non disponibile.");
+
+  const day = CURRENT_DAY;
+  const dailyRefToday = ref(db, `${ORO_DAILY_BASE}/${day}`);
+  const snap = await get(dailyRefToday);
+  if (!snap.exists()) return alert("Daily non trovato per " + day);
+
+  const cur = snap.val() || {};
+  const def = buildDefaultDailyPayload();
+  const patch = {};
+  let converted = 0;
+
+  for (const sign of Object.keys(def)) {
+    if (sign === "updatedAt") continue;
+    const v = cur[sign];
+
+    if (v == null) {
+      patch[sign] = def[sign];
+      converted++;
+      continue;
+    }
+
+    if (typeof v === "string") {
+      const d = def[sign];
+      patch[sign] = { testo: v, amore: d.amore, lavoro: d.lavoro, fortuna: d.fortuna, consiglio: d.consiglio };
+      converted++;
+      continue;
+    }
+
+    if (v && typeof v === "object") {
+      const d = def[sign];
+      for (const k of ["testo","amore","lavoro","fortuna","consiglio"]) {
+        if (v[k] == null || v[k] === "") patch[`${sign}/${k}`] = d[k];
+      }
+    }
+  }
+
+  patch.updatedAt = Date.now();
+  await update(dailyRefToday, patch);
+
+  alert(`Migrazione completata: ${converted} segni convertiti per ${day}.`);
 }
 
 // ==========================
@@ -568,6 +643,7 @@ function playIntro() {
 
 // ==========================
 // 🌌 MODALE OROSCOPO
+// ✅ cover “adeguato” (riempie senza schiacciare)
 // ==========================
 function initModal() {
   const closeBtn = document.getElementById("closeModal");
@@ -594,6 +670,12 @@ function openModal(data) {
   if (image) {
     image.classList.remove("zoom");
     image.style.backgroundImage = `url("${safeImg(data.img)}")`;
+
+    // ✅ cover “adeguato”
+    image.style.backgroundSize = "cover";
+    image.style.backgroundPosition = "center";
+    image.style.backgroundRepeat = "no-repeat";
+
     void image.offsetWidth;
     image.classList.add("zoom");
   }
@@ -649,6 +731,7 @@ async function postOroscopoToBacheca(signName) {
 
 // ==========================
 // 🧾 POST NEUTRO — lettura campi
+// ✅ accetta LINK oppure CODICE INCORPORAMENTO
 // ==========================
 function readNeutralFields(){
   const title = sanitizePlainASCII(document.getElementById("pnTitle")?.value || "");
@@ -656,13 +739,22 @@ function readNeutralFields(){
   const link  = normalizeLink(document.getElementById("pnLink")?.value || "");
   const image = String(document.getElementById("pnImage")?.value || "").trim();
 
+  // ✅ qui puoi incollare: ID / link / iframe embed
   const videoId = extractYouTubeId(document.getElementById("pnVideo")?.value || "");
   const musicId = extractYouTubeId(document.getElementById("pnMusic")?.value || "");
 
   const mode =
     document.querySelector('input[name="pnVideoMode"]:checked')?.value || "visible";
 
-  return { title, body, link, image, videoId, musicId, videoMode: mode };
+  return {
+    title,
+    body,
+    link,
+    image,
+    videoId,
+    musicId,
+    videoMode: mode // "visible" | "hidden"
+  };
 }
 
 function clearNeutralFields(){
@@ -717,11 +809,11 @@ async function postNeutralToBacheca() {
 }
 
 // ==========================
-// 🧾 COPIA POST — HTML incollabile (ROBUSTO)
-// ✅ NO <script>
-// ✅ NO onclick (bacheche le bloccano)
-// ✅ musica via data-attribute (handler globale sotto)
-// ✅ GIF/IMG cover 100%
+// 🧾 COPIA POST — genera HTML incollabile (ROBUSTO)
+// ✅ Accetta LINK oppure EMBED (iframe) -> ricava ID
+// ✅ Musica invisibile: div display:block + visibility:hidden (il tuo trucco)
+// ✅ GIF/IMG: COVER “adeguato” (riempie sempre, taglio minimo al centro)
+// ⚠️ Nota: alcuni siti NON permettono iframe/onclick. Su Pianeta Segreto funziona.
 // ==========================
 function escapeHtml(s){
   return String(s||"")
@@ -737,16 +829,28 @@ function buildPublishablePostHTML({ title, body, link, image, videoId, musicId, 
   const b = body  || "Il nostro oracolo ci accompagna.\n\nQuando il cielo tace, ascolta il cuore.";
   const l = link  || "https://alexcaos75.github.io/oroscopo/";
 
-  const img = (image && String(image).trim()) ? String(image).trim() : "";
+  const hasImg = !!(image && String(image).trim());
+  const imgSrc = hasImg ? String(image).trim() : "";
+
+  // video visibile oppure musica invisibile
   const vid = (videoMode === "visible") ? (videoId || "") : "";
   const mus = (videoMode === "hidden") ? (musicId || videoId || "") : "";
 
   const escT = escapeHtml(t);
   const escB = escapeHtml(b);
   const escL = escapeHtml(l);
-  const escImg = escapeHtml(img);
+  const escImg = escapeHtml(imgSrc);
   const escVid = escapeHtml(vid);
   const escMus = escapeHtml(mus);
+
+  const musSrcStop = "about:blank";
+  const musSrcPlay =
+    `https://www.youtube.com/embed/${escMus}` +
+    `?autoplay=1&loop=1&playlist=${escMus}&controls=0&rel=0&modestbranding=1&playsinline=1`;
+
+  const vidSrc =
+    `https://www.youtube.com/embed/${escVid}` +
+    `?rel=0&modestbranding=1&playsinline=1`;
 
   return `
 <div style="
@@ -815,8 +919,8 @@ function buildPublishablePostHTML({ title, body, link, image, videoId, musicId, 
       </a>
 
       ${mus ? `
-      <span data-psmusic data-yt="${escMus}" style="display:inline-flex;gap:10px;flex-wrap:wrap;align-items:center;">
-        <button type="button" data-ps-play
+      <span data-psmusic style="display:inline-flex;gap:10px;flex-wrap:wrap;align-items:center;">
+        <button
           style="
             padding:12px 16px;border-radius:999px;
             font-weight:950;font-size:13px;letter-spacing:.35px;
@@ -825,9 +929,18 @@ function buildPublishablePostHTML({ title, body, link, image, videoId, musicId, 
             border:1px solid rgba(255,255,255,.18);
             box-shadow:0 18px 56px rgba(0,0,0,.35);
           "
+          onclick="(function(btn){
+            try{
+              var wrap = btn.closest('[data-psmusic]');
+              if(!wrap) return;
+              var fr = wrap.querySelector('iframe');
+              if(!fr) return;
+              fr.src='${musSrcPlay}';
+            }catch(e){}
+          })(this);"
         >ASCOLTA</button>
 
-        <button type="button" data-ps-stop
+        <button
           style="
             padding:12px 16px;border-radius:999px;
             font-weight:950;font-size:13px;letter-spacing:.35px;
@@ -835,19 +948,49 @@ function buildPublishablePostHTML({ title, body, link, image, videoId, musicId, 
             background:rgba(255,255,255,.10);
             border:1px solid rgba(255,255,255,.18);
           "
+          onclick="(function(btn){
+            try{
+              var wrap = btn.closest('[data-psmusic]');
+              if(!wrap) return;
+              var fr = wrap.querySelector('iframe');
+              if(!fr) return;
+              fr.src='${musSrcStop}';
+            }catch(e){}
+          })(this);"
         >STOP</button>
 
-        <span data-ps-frameholder style="display:none;"></span>
+        <!-- ✅ IL TUO TRUCCO: display:block + visibility:hidden -->
+        <div style="display:block; visibility:hidden; height:0; overflow:hidden;">
+          <iframe width="1" height="1"
+            src="about:blank"
+            title="PS Music"
+            frameborder="0"
+            allow="autoplay; encrypted-media; picture-in-picture"
+            referrerpolicy="strict-origin-when-cross-origin"
+            allowfullscreen></iframe>
+        </div>
       </span>
       ` : ``}
     </div>
   </div>
 
-  ${img ? `
+  ${hasImg ? `
   <div style="background:rgba(0,0,0,.35); border-top:1px solid rgba(255,255,255,.10);">
-    <div style="width:100%;height:70vh;max-height:760px;background:#000;overflow:hidden;">
+    <div style="
+      width:100%;
+      height:clamp(320px, 62vh, 760px);
+      background:#000;
+      overflow:hidden;
+    ">
       <img src="${escImg}" alt="Pianeta Segreto"
-        style="width:100%;height:100%;display:block;object-fit:cover;" />
+        style="
+          width:100%;
+          height:100%;
+          display:block;
+          object-fit:cover;          /* ✅ riempie sempre */
+          object-position:center;    /* ✅ taglio minimo al centro */
+          background:#000;
+        " />
     </div>
   </div>
   ` : ``}
@@ -855,12 +998,14 @@ function buildPublishablePostHTML({ title, body, link, image, videoId, musicId, 
   ${vid ? `
   <div style="padding:16px;background:rgba(0,0,0,.25);border-top:1px solid rgba(255,255,255,.10);">
     <iframe
-      src="https://www.youtube.com/embed/${escVid}?rel=0&modestbranding=1&playsinline=1"
+      src="${vidSrc}"
       style="width:100%;aspect-ratio:16/9;border-radius:18px;border:1px solid rgba(255,255,255,.14);"
       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+      referrerpolicy="strict-origin-when-cross-origin"
       allowfullscreen></iframe>
   </div>
   ` : ``}
+
 </div>
 `.trim();
 }
@@ -884,65 +1029,7 @@ async function copyPostHTML(){
 }
 
 // ==========================
-// 🎧 HANDLER GLOBALE BACHECA: ASCOLTA / STOP
-// - Funziona anche per post "incollati" (delegation)
-// - Crea iframe 1x1 (compatibile) SOLO al click
-// ==========================
-function initBachecaAudioDelegation(){
-  document.addEventListener("click", (e) => {
-    const playBtn = e.target.closest?.("[data-ps-play]");
-    const stopBtn = e.target.closest?.("[data-ps-stop]");
-
-    if (!playBtn && !stopBtn) return;
-
-    const wrap = (playBtn || stopBtn).closest("[data-psmusic]");
-    if (!wrap) return;
-
-    const yt = wrap.getAttribute("data-yt") || "";
-    const holder = wrap.querySelector("[data-ps-frameholder]");
-
-    // helper: trova o crea iframe
-    const getOrCreateFrame = () => {
-      let fr = holder?.querySelector("iframe");
-      if (!fr) {
-        fr = document.createElement("iframe");
-        fr.setAttribute("allow", "autoplay; encrypted-media");
-        fr.style.width = "1px";
-        fr.style.height = "1px";
-        fr.style.opacity = "0";
-        fr.style.position = "fixed";
-        fr.style.left = "0";
-        fr.style.bottom = "0";
-        fr.style.pointerEvents = "none";
-        fr.style.border = "0";
-        fr.src = "about:blank";
-        holder?.appendChild(fr);
-      }
-      return fr;
-    };
-
-    if (playBtn) {
-      if (!yt) return;
-      const fr = getOrCreateFrame();
-
-      // Ferma tutte le altre musiche attive (1 alla volta)
-      document.querySelectorAll("[data-ps-frameholder] iframe").forEach((other) => {
-        if (other !== fr) other.src = "about:blank";
-      });
-
-      // Avvia
-      fr.src = `https://www.youtube.com/embed/${encodeURIComponent(yt)}?autoplay=1&loop=1&playlist=${encodeURIComponent(yt)}&controls=0&rel=0&modestbranding=1&playsinline=1`;
-    }
-
-    if (stopBtn) {
-      const fr = holder?.querySelector("iframe");
-      if (fr) fr.src = "about:blank";
-    }
-  });
-}
-
-// ==========================
-// 📋 COPIA DISCORD
+// 📋 COPIA DISCORD (per segno selezionato)
 // ==========================
 async function copyDiscordMessage(signName) {
   if (!CURRENT_DAY) return alert("CURRENT_DAY non disponibile.");
@@ -1017,9 +1104,9 @@ function initAdmin() {
     alert("Salvato.");
   };
 
-  if (postBtn)  postBtn.onclick  = async () => { if (!isAdmin) return alert("Prima attiva ADMIN."); await postOroscopoToBacheca(select.value); };
+  if (postBtn) postBtn.onclick = async () => { if (!isAdmin) return alert("Prima attiva ADMIN."); await postOroscopoToBacheca(select.value); };
   if (postNeut) postNeut.onclick = async () => { if (!isAdmin) return alert("Prima attiva ADMIN."); await postNeutralToBacheca(); };
-  if (copyBtn)  copyBtn.onclick  = async () => { await copyDiscordMessage(select.value); };
+  if (copyBtn) copyBtn.onclick = async () => { await copyDiscordMessage(select.value); };
   if (copyPost) copyPost.onclick = async () => { await copyPostHTML(); };
 
   btn.onclick = () => {
@@ -1074,10 +1161,6 @@ async function init() {
   initAdmin();
   idlePulse();
 
-  // ✅ fondamentale per far suonare la musica nei post incollati
-  initBachecaAudioDelegation();
-
-  // exports utili
-  window.LUNA.copyPostHTML = copyPostHTML;
-  window.LUNA.buildPublishablePostHTML = buildPublishablePostHTML;
+  window.LUNA.migrateTodayToRichFormat = migrateTodayToRichFormat;
+  window.LUNA.ensureDailyOroscopoUpToDate = ensureDailyOroscopoUpToDate;
 }
