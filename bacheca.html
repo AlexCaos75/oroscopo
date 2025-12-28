@@ -1,247 +1,525 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="theme-color" content="#050511" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#070818" />
   <title>Bacheca Pianeta Segreto</title>
-
-  <!-- opzionale: se vuoi mantenere qualche font o reset dal tuo style.css -->
-  <!-- <link rel="stylesheet" href="style.css" /> -->
 
   <style>
     :root{
-      --bg0:#050511;
-      --bg1:#090a1d;
-      --glass:rgba(255,255,255,.08);
-      --line:rgba(255,255,255,.14);
+      --bg0:#050610;
+      --bg1:#070818;
+      --card:rgba(255,255,255,.06);
+      --card2:rgba(255,255,255,.08);
+      --border:rgba(255,255,255,.14);
       --txt:rgba(255,255,255,.92);
       --muted:rgba(255,255,255,.70);
       --muted2:rgba(255,255,255,.55);
-      --shadow: 0 18px 60px rgba(0,0,0,.55);
+      --shadow:0 20px 80px rgba(0,0,0,.55);
+      --shadow2:0 10px 40px rgba(0,0,0,.45);
       --r:18px;
+      --r2:14px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
     }
 
-    *{box-sizing:border-box}
-    html,body{height:100%}
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
     body{
       margin:0;
+      font-family:var(--sans);
       color:var(--txt);
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Liberation Sans", sans-serif;
-      background: radial-gradient(1200px 600px at 20% 10%, #1a1b3f 0%, transparent 55%),
-                  radial-gradient(900px 500px at 85% 30%, #2a1052 0%, transparent 55%),
-                  radial-gradient(1200px 700px at 50% 95%, #0b3a50 0%, transparent 55%),
-                  linear-gradient(180deg, var(--bg0), var(--bg1));
+      background:
+        radial-gradient(1100px 700px at 18% 18%, rgba(140,90,255,.18), transparent 55%),
+        radial-gradient(1000px 650px at 85% 30%, rgba(70,190,255,.14), transparent 58%),
+        radial-gradient(900px 600px at 55% 90%, rgba(255,120,210,.10), transparent 55%),
+        linear-gradient(180deg, var(--bg1), var(--bg0));
       overflow-x:hidden;
     }
 
-    /* stelle */
-    .stars{
+    /* stelle soft */
+    body:before{
+      content:"";
       position:fixed; inset:0;
-      background-image:
-        radial-gradient(2px 2px at 20% 30%, rgba(255,255,255,.55) 40%, transparent 41%),
-        radial-gradient(1px 1px at 70% 20%, rgba(255,255,255,.35) 40%, transparent 41%),
-        radial-gradient(1px 1px at 45% 60%, rgba(255,255,255,.25) 40%, transparent 41%),
-        radial-gradient(2px 2px at 85% 75%, rgba(255,255,255,.35) 40%, transparent 41%),
-        radial-gradient(1px 1px at 15% 80%, rgba(255,255,255,.25) 40%, transparent 41%),
-        radial-gradient(1px 1px at 55% 15%, rgba(255,255,255,.25) 40%, transparent 41%);
-      opacity:.65;
       pointer-events:none;
-      filter: blur(.2px);
+      background-image:
+        radial-gradient(1px 1px at 15% 30%, rgba(255,255,255,.35), transparent 45%),
+        radial-gradient(1px 1px at 28% 72%, rgba(255,255,255,.22), transparent 45%),
+        radial-gradient(1px 1px at 62% 18%, rgba(255,255,255,.18), transparent 45%),
+        radial-gradient(1px 1px at 78% 52%, rgba(255,255,255,.22), transparent 45%),
+        radial-gradient(1px 1px at 90% 80%, rgba(255,255,255,.20), transparent 45%);
+      opacity:.9;
+      mix-blend-mode:screen;
     }
 
     .wrap{
-      max-width: 980px;
-      margin: 0 auto;
-      padding: 28px 14px 44px;
-      position:relative;
+      max-width:980px;
+      margin:0 auto;
+      padding:24px 16px 40px;
     }
 
     .topbar{
       display:flex;
-      gap:12px;
+      gap:10px;
       align-items:center;
       justify-content:space-between;
-      margin-bottom:14px;
+      margin:10px 0 18px;
     }
 
     .brand{
-      display:flex; gap:12px; align-items:center;
+      display:flex;
+      align-items:center;
+      gap:12px;
+      user-select:none;
     }
 
-    .moon{
-      width:42px; height:42px;
-      border-radius:50%;
-      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.95), rgba(255,255,255,.35) 45%, rgba(255,255,255,.10) 70%);
-      box-shadow: 0 0 35px rgba(167,139,250,.30);
+    .sigil{
+      width:44px;height:44px;
+      border-radius:14px;
+      background:
+        radial-gradient(circle at 30% 30%, rgba(255,255,255,.22), transparent 55%),
+        linear-gradient(135deg, rgba(130,80,255,.55), rgba(60,200,255,.35));
       border:1px solid rgba(255,255,255,.18);
+      box-shadow: 0 18px 55px rgba(80,120,255,.18);
+      display:grid; place-items:center;
+      font-weight:800;
+      letter-spacing:.6px;
     }
 
-    .title{
+    .brand h1{
       margin:0;
-      font-size: 20px;
+      font-size:20px;
       letter-spacing:.2px;
     }
-    .subtitle{
-      margin:3px 0 0;
-      color:var(--muted);
-      font-size:13px;
-      line-height:1.35;
-    }
-
-    .chip{
-      padding:8px 10px;
-      border-radius: 999px;
-      border:1px solid rgba(255,255,255,.14);
-      background: rgba(0,0,0,.20);
-      color:var(--muted);
-      font-size:12px;
-      user-select:none;
-      white-space:nowrap;
-    }
-
-    .card{
-      border-radius: var(--r);
-      border:1px solid var(--line);
-      background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.06));
-      box-shadow: var(--shadow);
-      backdrop-filter: blur(10px);
-      overflow:hidden;
-      position:relative;
-    }
-    .card::before{
-      content:"";
-      position:absolute; inset:-2px;
-      background: radial-gradient(700px 220px at 15% 0%, rgba(167,139,250,.28), transparent 60%),
-                  radial-gradient(700px 220px at 85% 10%, rgba(56,189,248,.20), transparent 60%),
-                  radial-gradient(700px 220px at 60% 100%, rgba(34,211,238,.14), transparent 65%);
-      pointer-events:none;
-    }
-
-    .card-inner{
-      position:relative;
-      padding: 16px;
-    }
-
-    .state{
-      color: var(--muted);
-      padding: 12px 0;
-      font-size: 14px;
-    }
-
-    .meta{
-      display:flex;
-      flex-wrap:wrap;
-      gap:8px;
-      color: var(--muted2);
-      font-size:12px;
-      margin-top:8px;
-    }
-
-    .meta b{color:var(--txt); font-weight:650}
-
-    .text{
-      margin-top: 12px;
-      white-space: pre-wrap;
-      line-height: 1.45;
-      font-size: 14px;
-      color: rgba(255,255,255,.90);
-      background: rgba(0,0,0,.25);
-      border:1px solid rgba(255,255,255,.12);
-      border-radius: 14px;
-      padding: 12px;
+    .brand p{
+      margin:2px 0 0;
+      font-size:12.5px;
+      color:var(--muted2);
     }
 
     .actions{
       display:flex;
       gap:10px;
       flex-wrap:wrap;
-      margin-top: 14px;
+      justify-content:flex-end;
     }
 
-    .btn, .linkbtn{
+    .btn{
+      appearance:none;
+      border:1px solid rgba(255,255,255,.16);
+      background: rgba(255,255,255,.06);
+      color:var(--txt);
+      padding:10px 12px;
+      border-radius:12px;
+      cursor:pointer;
+      font-weight:650;
+      font-size:13px;
+      transition:transform .08s ease, background .18s ease, border-color .18s ease;
       display:inline-flex;
       align-items:center;
-      justify-content:center;
       gap:8px;
-      padding: 10px 12px;
-      border-radius: 14px;
-      border:1px solid rgba(255,255,255,.14);
-      background: rgba(255,255,255,.10);
-      color: rgba(255,255,255,.92);
+      box-shadow: 0 10px 30px rgba(0,0,0,.25);
       text-decoration:none;
-      cursor:pointer;
-      transition: transform .12s ease, background .12s ease, border-color .12s ease;
-      user-select:none;
     }
-    .btn:hover, .linkbtn:hover{
+    .btn:hover{
+      background: rgba(255,255,255,.10);
+      border-color: rgba(255,255,255,.26);
       transform: translateY(-1px);
-      background: rgba(255,255,255,.14);
+    }
+    .btn.primary{
+      background: linear-gradient(135deg, rgba(130,80,255,.55), rgba(60,200,255,.30));
       border-color: rgba(255,255,255,.22);
     }
-    .btn:active, .linkbtn:active{
-      transform: translateY(0px);
+
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.05));
+      border:1px solid rgba(255,255,255,.14);
+      border-radius:var(--r);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      position:relative;
     }
 
-    .btn.primary{
-      background: linear-gradient(180deg, rgba(167,139,250,.28), rgba(167,139,250,.10));
-      border-color: rgba(167,139,250,.38);
+    .card:before{
+      content:"";
+      position:absolute; inset:-2px;
+      background:
+        radial-gradient(600px 280px at 10% 0%, rgba(140,90,255,.22), transparent 60%),
+        radial-gradient(700px 300px at 95% 30%, rgba(70,190,255,.18), transparent 60%),
+        radial-gradient(600px 260px at 50% 100%, rgba(255,120,210,.12), transparent 60%);
+      pointer-events:none;
+      opacity:.9;
+      mix-blend-mode:screen;
     }
 
-    .footer-note{
-      margin-top: 10px;
-      font-size: 12px;
-      color: var(--muted2);
-      opacity:.95;
+    .card-inner{
+      position:relative;
+      padding:18px;
+    }
+
+    .meta{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+      margin-bottom:10px;
+    }
+
+    .meta-left{
+      min-width:0;
+    }
+
+    .title{
+      margin:0;
+      font-size:18px;
+      font-weight:800;
+      letter-spacing:.2px;
+    }
+    .subtitle{
+      margin:6px 0 0;
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.35;
+    }
+
+    .chips{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-top:10px;
+    }
+    .chip{
+      font-size:12px;
+      color:rgba(255,255,255,.82);
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.15);
+      padding:6px 10px;
+      border-radius:999px;
+      backdrop-filter: blur(6px);
+    }
+
+    .divider{
+      height:1px;
+      background: rgba(255,255,255,.12);
+      margin:14px 0 14px;
+    }
+
+    .loading{
+      color:var(--muted);
+      font-size:14px;
+    }
+
+    .box{
+      background: rgba(0,0,0,.22);
+      border:1px solid rgba(255,255,255,.14);
+      border-radius:var(--r2);
+      padding:14px;
+      box-shadow: var(--shadow2);
+      backdrop-filter: blur(8px);
+    }
+
+    pre.text{
+      margin:0;
+      white-space:pre-wrap;
+      word-break:break-word;
+      font-family:var(--mono);
+      font-size:13.5px;
+      line-height:1.5;
+      color:rgba(255,255,255,.90);
+    }
+
+    .media{
+      width:100%;
+      max-height:460px;
+      object-fit:cover;
+      border-radius:var(--r2);
+      margin-top:14px;
+      border:1px solid rgba(255,255,255,.16);
+      box-shadow: var(--shadow2);
+      display:none;
+    }
+
+    .video-wrap{
+      margin-top:14px;
+      border-radius:var(--r2);
+      overflow:hidden;
+      border:1px solid rgba(255,255,255,.16);
+      box-shadow: var(--shadow2);
+      display:none;
+      background: rgba(0,0,0,.25);
+    }
+    .video-wrap iframe{
+      width:100%;
+      aspect-ratio:16/9;
+      display:block;
+    }
+
+    .foot{
+      margin-top:14px;
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:space-between;
+      color:var(--muted2);
+      font-size:12.5px;
+    }
+
+    .small{
+      color:var(--muted2);
+      font-size:12.5px;
+    }
+
+    .toast{
+      position:fixed;
+      left:50%;
+      bottom:18px;
+      transform:translateX(-50%);
+      background: rgba(0,0,0,.55);
+      border:1px solid rgba(255,255,255,.18);
+      border-radius:999px;
+      padding:10px 14px;
+      color:rgba(255,255,255,.9);
+      font-size:13px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.55);
+      backdrop-filter: blur(10px);
+      opacity:0;
+      pointer-events:none;
+      transition:opacity .18s ease, transform .18s ease;
+    }
+    .toast.show{
+      opacity:1;
+      transform:translateX(-50%) translateY(-2px);
     }
 
     @media (max-width:520px){
-      .title{font-size:18px}
-      .chip{display:none}
-      .card-inner{padding:14px}
-      .text{font-size:13.5px}
+      .meta{ flex-direction:column; align-items:flex-start; }
+      .actions{ justify-content:flex-start; }
     }
   </style>
 </head>
 
 <body>
-  <div class="stars" aria-hidden="true"></div>
-
   <div class="wrap">
     <div class="topbar">
       <div class="brand">
-        <div class="moon" aria-hidden="true"></div>
+        <div class="sigil">PS</div>
         <div>
-          <h1 class="title">Bacheca Pianeta Segreto</h1>
-          <p class="subtitle">Ultimo messaggio pubblicato da <b>Luna Vallyy</b> (testo pulito, pronto anche per Discord).</p>
+          <h1>Bacheca Pianeta Segreto</h1>
+          <p>Ultimo messaggio pubblicato da <b>Luna Vallyy</b> (testo pulito, pronto anche per Discord).</p>
         </div>
       </div>
 
-      <div class="chip">LIVE • Firebase</div>
+      <div class="actions">
+        <a class="btn" href="index.html" title="Torna alla ruota">⟵ Ruota</a>
+        <button class="btn primary" id="copyBtn" type="button">Copia Discord</button>
+        <a class="btn" id="openLink" href="#" target="_blank" rel="noopener">Apri link</a>
+      </div>
     </div>
 
     <div class="card">
       <div class="card-inner">
-        <div id="bachecaState" class="state">Caricamento...</div>
-
-        <div id="bachecaBlock" style="display:none;">
-          <div class="meta" id="bachecaMeta"></div>
-          <div class="text" id="bachecaText"></div>
-
-          <div class="actions">
-            <a id="bachecaOpenLink" class="linkbtn primary" href="#" target="_blank" rel="noopener">Apri link</a>
-            <button id="bachecaCopy" class="btn" type="button">Copia Discord</button>
-            <a class="linkbtn" href="index.html">Torna alla Ruota</a>
+        <div class="meta">
+          <div class="meta-left">
+            <h2 class="title" id="postTitle">Caricamento…</h2>
+            <div class="subtitle" id="postSub">Attendo il responso dal Pianeta Segreto.</div>
+            <div class="chips" id="chips" style="display:none">
+              <span class="chip" id="chipDay"></span>
+              <span class="chip" id="chipSign"></span>
+              <span class="chip" id="chipAt"></span>
+            </div>
           </div>
+          <div class="small" id="status">LIVE</div>
+        </div>
 
-          <div class="footer-note">
-            Suggerimento: se in Discord vuoi solo testo, usa “Copia Discord”.
+        <div class="divider"></div>
+
+        <div class="box">
+          <div class="loading" id="loading">Caricamento…</div>
+          <pre class="text" id="postText" style="display:none"></pre>
+          <img id="postImage" class="media" alt="Immagine Pianeta Segreto" />
+          <div id="videoWrap" class="video-wrap">
+            <iframe id="ytFrame" src="" title="Video Pianeta Segreto"
+              frameborder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowfullscreen></iframe>
           </div>
+        </div>
+
+        <div class="foot">
+          <div id="footLeft">Nessun post ancora.</div>
+          <div id="footRight" class="small">Suggerimento: usa ADMIN → POST BACHECA dalla Ruota.</div>
         </div>
       </div>
     </div>
   </div>
 
-  <script type="module" src="bacheca.js?v=20251228-capolavoro"></script>
+  <div class="toast" id="toast">Copiato.</div>
+
+  <script type="module">
+    // ==========================
+    // Firebase (stesso progetto della Ruota)
+    // ==========================
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAwvbPE9ERhPsguZGqBK1ZCA1LBWUDDDTw",
+      authDomain: "ruota-lunare-2026.firebaseapp.com",
+      projectId: "ruota-lunare-2026",
+      storageBucket: "ruota-lunare-2026.firebasestorage.app",
+      messagingSenderId: "30667953656",
+      appId: "1:30667953656:web:3bd55af9bbf2ce8b8fb20d",
+      databaseURL: "https://ruota-lunare-2026-default-rtdb.europe-west1.firebasedatabase.app"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    const BACHECA_LATEST = "ruota-lunare/bacheca/latest";
+
+    // ==========================
+    // UI refs
+    // ==========================
+    const postTitle = document.getElementById("postTitle");
+    const postSub   = document.getElementById("postSub");
+    const postText  = document.getElementById("postText");
+    const loading   = document.getElementById("loading");
+    const copyBtn   = document.getElementById("copyBtn");
+    const openLink  = document.getElementById("openLink");
+    const statusEl  = document.getElementById("status");
+    const footLeft  = document.getElementById("footLeft");
+    const footRight = document.getElementById("footRight");
+
+    const chips     = document.getElementById("chips");
+    const chipDay   = document.getElementById("chipDay");
+    const chipSign  = document.getElementById("chipSign");
+    const chipAt    = document.getElementById("chipAt");
+
+    const imgEl     = document.getElementById("postImage");
+    const videoWrap = document.getElementById("videoWrap");
+    const ytFrame   = document.getElementById("ytFrame");
+
+    const toast     = document.getElementById("toast");
+
+    let latestPayload = null;
+
+    function toastShow(msg){
+      toast.textContent = msg;
+      toast.classList.add("show");
+      setTimeout(()=>toast.classList.remove("show"), 1400);
+    }
+
+    function safeTime(ts){
+      try{
+        const d = new Date(ts);
+        return d.toLocaleString("it-IT", { year:"numeric", month:"2-digit", day:"2-digit", hour:"2-digit", minute:"2-digit" });
+      }catch{
+        return "";
+      }
+    }
+
+    function isValidYouTubeId(id){
+      return typeof id === "string" && /^[a-zA-Z0-9_-]{6,20}$/.test(id);
+    }
+
+    function render(payload){
+      latestPayload = payload;
+
+      // base
+      loading.style.display = "none";
+      postText.style.display = "block";
+      chips.style.display = "flex";
+
+      const author = payload?.author || "Luna Vallyy";
+      const oracle = payload?.oracle || "Oracolo di PianetaSegreto";
+      const day    = payload?.day || "";
+      const sign   = payload?.sign || "";
+      const at     = payload?.at || 0;
+      const link   = payload?.link || "index.html";
+      const text   = payload?.text || "Nessun post ancora.";
+
+      postTitle.textContent = `${author} - ${oracle}`;
+      postSub.textContent   = "Ultimo messaggio dal Pianeta Segreto. Pronto anche per Discord.";
+      postText.textContent  = text;
+
+      chipDay.textContent  = day ? `Giorno: ${day}` : "Giorno: -";
+      chipSign.textContent = sign ? `Pianetini: ${sign}` : "Pianetini: -";
+      chipAt.textContent   = at ? `Pubblicato: ${safeTime(at)}` : "Pubblicato: -";
+
+      openLink.href = link;
+
+      footLeft.textContent  = day && sign ? `Ultimo post: ${day} - ${sign}` : "Ultimo post disponibile.";
+      footRight.textContent = "Consiglio: in Ruota → ADMIN → POST BACHECA.";
+
+      // immagine opzionale (es: "immagini/luna.jpg" oppure URL)
+      imgEl.style.display = "none";
+      imgEl.removeAttribute("src");
+      if (payload?.image && typeof payload.image === "string" && payload.image.trim()){
+        imgEl.src = payload.image.trim();
+        imgEl.style.display = "block";
+      }
+
+      // video opzionale (solo ID)
+      videoWrap.style.display = "none";
+      ytFrame.src = "";
+      if (payload?.video && isValidYouTubeId(payload.video)){
+        ytFrame.src = "https://www.youtube.com/embed/" + payload.video + "?rel=0";
+        videoWrap.style.display = "block";
+      }
+
+      statusEl.textContent = "LIVE";
+    }
+
+    function renderEmpty(){
+      loading.style.display = "none";
+      postText.style.display = "block";
+      postText.textContent = "Nessun post ancora.\n\nApri la Ruota, entra ADMIN e premi POST BACHECA.";
+      postTitle.textContent = "Bacheca Pianeta Segreto";
+      postSub.textContent = "In attesa del primo messaggio.";
+      openLink.href = "index.html";
+      chips.style.display = "none";
+      imgEl.style.display = "none";
+      videoWrap.style.display = "none";
+      statusEl.textContent = "VUOTO";
+      footLeft.textContent = "Nessun post ancora.";
+    }
+
+    // copy
+    copyBtn.addEventListener("click", async () => {
+      const t = latestPayload?.text || "";
+      if (!t.trim()){
+        toastShow("Niente da copiare");
+        return;
+      }
+      try{
+        await navigator.clipboard.writeText(t);
+        toastShow("Copiato");
+      }catch{
+        const ta = document.createElement("textarea");
+        ta.value = t;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+        toastShow("Copiato");
+      }
+    });
+
+    // LIVE listener
+    onValue(ref(db, BACHECA_LATEST), (snap) => {
+      if (!snap.exists()){
+        renderEmpty();
+        return;
+      }
+      const payload = snap.val();
+      render(payload);
+    }, (err) => {
+      console.warn("Bacheca read error:", err);
+      renderEmpty();
+      statusEl.textContent = "OFF";
+    });
+  </script>
 </body>
 </html>
